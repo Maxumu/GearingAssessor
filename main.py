@@ -1,5 +1,3 @@
-# git is working from the linux machine too
-
 from os.path import realpath
 import pandas as pd
 import numpy as np
@@ -25,6 +23,7 @@ def csv_2_dataframe(csv_file):
     read_rear_string = read_csv.head()
     # print("csv_2_dataframe done")
     return read_csv
+    
 
 def sprocket_generator(max_rear = 6, max_front = 2, smallest_rear = 11, largest_rear = 22, smallest_front = 34, largest_front = 54):
     """
@@ -140,6 +139,18 @@ def calculate_ratios(real,generated):
     # text_file.close()
     print("calculate_ratios done")
     return(gear_combinations)
+
+def unique_sprockets():
+    """
+    Input:
+        Long dataframe with all real gears
+    Output:
+        Unique rear sprocket tooth numbers
+    """
+    long_real = calculate_ratios(True,False)
+    unique = long_real['RearTeeth'].unique()
+    print(np.sort(unique))
+    return
 
 def drivetrain_splitter():
     """
@@ -381,32 +392,35 @@ def results_plotter(score_dict):
         x_value = df["Worst Efficiency"]
         y_value = df["Range"]
         plt.scatter(x_value, y_value, label=key)
-        plt.text(x_value, y_value, key, fontsize=6, ha='right')
+        # plt.text(x_value, y_value, key, fontsize=6, ha='right')
         if x_value.iloc[0] < leader:
             leader = x_value.iloc[0]
             leader_key = key
-
+    
     plt.xlabel("Worst Efficiency")
     plt.ylabel("Range")
     plt.title("Score DataFrames Scatter Plot")
     plt.grid(True)
     # plt.legend()
+    # plt.show()
     plt.savefig("plot2.png")
     print("results_plotter done")
 
     return
 
-sprocket_params=(11,2,11,25,34,50)
+sprocket_params=(11,2,11,28,34,50)
 chainring_params=(50,34)
 real = False
 generated = True
 
-start = datetime.now()
-print(f"Start time: {start}")
-best_cadence()
-# score("ideal")
-results_plotter(score("ideal"))
-end = datetime.now()
-print(f"End time: {end}")
-duration = end - start
-print(f"Duration: {duration}")
+# start = datetime.now()
+# print(f"Start time: {start}")
+# best_cadence()
+# # score("ideal")
+# results_plotter(score("ideal"))
+# end = datetime.now()
+# print(f"End time: {end}")
+# duration = end - start
+# print(f"Duration: {duration}")
+
+unique_sprockets()
