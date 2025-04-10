@@ -1,4 +1,4 @@
-print("Is git working??")
+# git is working from the linux machine too
 
 from os.path import realpath
 import pandas as pd
