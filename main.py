@@ -191,22 +191,33 @@ def shifting_pattern(pattern):
 
     drivetrains = drivetrain_splitter()
 
+    # Chooses the pattern to sort the dataframe
     for key,drivetrain in drivetrains.items():
         if pattern == "ideal":
             drivetrains[key] = drivetrain.sort_values(by=("GearRatio"),ascending=[True])
         elif pattern == "halves":
             drivetrains[key] = drivetrain.sort_values(by=["FrontTeeth","RearTeeth"],ascending=[True, False])
+        elif pattern == "quarters":
+            drivetrains[key] = drivetrain.sort_values(by=["FrontTeeth","RearTeeth"],ascending=[True, False])
+            drivetrain = drivetrains[key]
+            combos = int(drivetrain.shape[0])
+            print(f"combos: {combos}")
+            if combos % 4 == 0:
+                first = drivetrain.iloc[0:(combos//4)]
+                second = drivetrain.iloc[(combos//4):(2*combos//4)]
+                third = drivetrain.iloc[(2*combos//4):(3*combos//4)]
+                fourth = drivetrain.iloc[3*combos//4:]
+                drivetrains[key] = pd.concat([first,third,second,fourth],ignore_index=True)
+            if combos % 2 == 0:
+                # combos % 4
+                print()
+                # this needs to decide how to distribute the gears that don't evenly split into four. I reckon if there are an even number of spares they go to 1st and 3rd quadrant
+                # if there are an odd number of spares (one lol) then that goes into the first quadrant
+                # this optimises for more low end gears (maybe)
         else:
-           print("Not an option buddy")
-    # # Chooses the pattern to sort the dataframe
-    # if pattern == "ideal":
-    #     gear_combinations = gear_combinations.sort_values(by=["Chainring", "Cassette", "GearRatio"],ascending=[True, True, True])
-    # elif pattern == "halves":
-    #     gear_combinations = gear_combinations.sort_values(by=["Chainring","Cassette","FrontTeeth","RearTeeth"],ascending=[True,True,True,False])
-    # # elif pattern == "quarters":
-    # #     gear_combinations = gear_combinations.sort_values(by=["Chainring","Cassette","FrontTeeth","RearTeeth"],ascending=[True,True,True,False])
-    # #     for cassette,rearteeth in gear_combinations["Cassette","RearTeeth"]:
-    # #         for cassette = cassette
+            print("Not an option buddy")
+            return
+    
     print("shifting_pattern done")
     return(drivetrains)
 
@@ -408,14 +419,14 @@ def results_plotter(score_dict):
 
     return
 
-sprocket_params=(11,2,11,28,34,50)
+sprocket_params=(4,2,1,5,34,50)
 chainring_params=(50,34)
 real = False
 generated = True
 
 # start = datetime.now()
 # print(f"Start time: {start}")
-# best_cadence()
+best_cadence()
 # # score("ideal")
 # results_plotter(score("ideal"))
 # end = datetime.now()
@@ -423,4 +434,6 @@ generated = True
 # duration = end - start
 # print(f"Duration: {duration}")
 
-unique_sprockets()
+shifting_pattern("quarters")
+
+# unique_sprockets()
