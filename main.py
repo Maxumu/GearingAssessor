@@ -198,22 +198,52 @@ def shifting_pattern(pattern):
         elif pattern == "halves":
             drivetrains[key] = drivetrain.sort_values(by=["FrontTeeth","RearTeeth"],ascending=[True, False])
         elif pattern == "quarters":
-            drivetrains[key] = drivetrain.sort_values(by=["FrontTeeth","RearTeeth"],ascending=[True, False])
-            drivetrain = drivetrains[key]
+            # Pre sorts the dataframe into halves pattern to make simpler 2nd operation
+            drivetrain = drivetrain.sort_values(by=["FrontTeeth","RearTeeth"],ascending=[True, False])
+            # drivetrain = drivetrains[key]
             combos = int(drivetrain.shape[0])
+            remainder = combos % 4
             print(f"combos: {combos}")
-            if combos % 4 == 0:
+            # Gear combos multiple of 4
+            if remainder == 0:
                 first = drivetrain.iloc[0:(combos//4)]
                 second = drivetrain.iloc[(combos//4):(2*combos//4)]
                 third = drivetrain.iloc[(2*combos//4):(3*combos//4)]
                 fourth = drivetrain.iloc[3*combos//4:]
-                drivetrains[key] = pd.concat([first,third,second,fourth],ignore_index=True)
-            if combos % 2 == 0:
-                # combos % 4
-                print()
-                # this needs to decide how to distribute the gears that don't evenly split into four. I reckon if there are an even number of spares they go to 1st and 3rd quadrant
-                # if there are an odd number of spares (one lol) then that goes into the first quadrant
-                # this optimises for more low end gears (maybe)
+
+            # Indivisible gears = 1, distributes 1st quadrant
+            if remainder == 1:
+                first_end = combos // 4 + 1
+                first = drivetrain.iloc[0:first_end]
+                second_end = first_end + (combos // 4)
+                second = drivetrain.iloc[first_end:second_end]
+                third_end = second_end + (combos // 4)
+                third = drivetrain.iloc[second_end:third_end]
+                fourth = drivetrain.iloc[third_end:]
+
+            # Indivisible gears = 2, distributes 1st, 3rd quadrants
+            if remainder == 2:
+                first_end = combos//4 + 1
+                first = drivetrain.iloc[0:first_end]
+                second_end = first_end + (combos//4)
+                second = drivetrain.iloc[first_end:second_end]
+                third_end = second_end + (combos//4) + 1
+                third = drivetrain.iloc[second_end:third_end]
+                fourth = drivetrain.iloc[third_end:]
+
+            # Indivisible gears = 3, distributes 1st, 2nd, 3rd quadrants
+            if remainder == 3:
+                first_end = combos // 4 + 1
+                first = drivetrain.iloc[0:first_end]
+                second_end = first_end + (combos // 4) + 1
+                second = drivetrain.iloc[first_end:second_end]
+                third_end = second_end + (combos // 4) + 1
+                third = drivetrain.iloc[second_end:third_end]
+                fourth = drivetrain.iloc[third_end:]
+
+            # Resorts quarters into order
+            drivetrains[key] = pd.concat([first, third, second, fourth], ignore_index=True)
+
         else:
             print("Not an option buddy")
             return
@@ -419,7 +449,7 @@ def results_plotter(score_dict):
 
     return
 
-sprocket_params=(4,2,1,5,34,50)
+sprocket_params=(5,2,1,5,34,50)
 chainring_params=(50,34)
 real = False
 generated = True
