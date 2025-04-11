@@ -9,6 +9,7 @@ import hypothesis
 import pytest
 from itertools import combinations
 from datetime import datetime
+import csv
 
 def csv_2_dataframe(csv_file):
     """
@@ -202,7 +203,6 @@ def shifting_pattern(pattern):
             # drivetrain = drivetrains[key]
             combos = int(drivetrain.shape[0])
             remainder = combos % 4
-            print(f"combos: {combos}")
             # Gear combos multiple of 4
             if remainder == 0:
                 first = drivetrain.iloc[0:(combos//4)]
@@ -447,21 +447,16 @@ def results_plotter(score_dict):
     print("results_plotter done")
     return
 
-def input_parameters(real,generated,no_in_rear,largest_rear):
-    return([real,generated,no_in_rear,largest_rear])
+def input_parameters(realin,generatedin,no_in_rear,largest_rear):
+    real = realin
+    generated = generatedin
+    sprocket_params = (no_in_rear, 2, 11, largest_rear, 34, 50)
+    chainring_params = (50, 34)
+    score("quarters")
+    return
 
 if __name__ == "__main__":
     print("Running")
-    real = input_parameters()[0]
-    generated = input_parameters()[1]
-    no_in_rear = input_parameters()[2]
-    largest_rear = input_parameters()[3]
-
-    sprocket_params = (no_in_rear, 2, 11, largest_rear, 34, 50)
-    chainring_params = (50, 34)
-    best_cadence()
-    score("quarters")
-
 
     # start = datetime.now()
     # print(f"Start time: {start}")
@@ -473,3 +468,23 @@ if __name__ == "__main__":
     # print(f"Duration: {duration}")
     # shifting_pattern("quarters")
     # unique_sprockets()
+    time_dict = {}
+    for i in range(7):
+        start = datetime.now()
+        no_in_rear = 6
+        largest_rear = 16 + i
+        sprocket_params = (no_in_rear, 2, 11, largest_rear, 34, 50)
+        chainring_params = (50, 34)
+        real = False
+        generated = True
+        best_cadence()
+        score("quarters")
+        end = datetime.now()
+        duration = end - start
+        key = 16+i
+        time_dict[key] = duration
+    with open("time_dict.csv", "w") as f:
+        writer = csv.writer(f, delimiter=":")
+        writer.writerows(time_dict.keys())
+    print(time_dict)
+        # input_parameters(False, True, 6, largest_rear)
