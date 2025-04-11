@@ -10,7 +10,6 @@ import pytest
 from itertools import combinations
 from datetime import datetime
 
-
 def csv_2_dataframe(csv_file):
     """
     Input:
@@ -446,24 +445,31 @@ def results_plotter(score_dict):
     # plt.show()
     plt.savefig("plot2.png")
     print("results_plotter done")
-
     return
 
-sprocket_params=(5,2,1,5,34,50)
-chainring_params=(50,34)
-real = False
-generated = True
+def input_parameters(real,generated,no_in_rear,largest_rear):
+    return([real,generated,no_in_rear,largest_rear])
 
-# start = datetime.now()
-# print(f"Start time: {start}")
-best_cadence()
-# # score("ideal")
-# results_plotter(score("ideal"))
-# end = datetime.now()
-# print(f"End time: {end}")
-# duration = end - start
-# print(f"Duration: {duration}")
+if __name__ == "__main__":
+    print("Running")
+    real = input_parameters()[0]
+    generated = input_parameters()[1]
+    no_in_rear = input_parameters()[2]
+    largest_rear = input_parameters()[3]
 
-shifting_pattern("quarters")
+    sprocket_params = (no_in_rear, 2, 11, largest_rear, 34, 50)
+    chainring_params = (50, 34)
+    best_cadence()
+    score("quarters")
 
-# unique_sprockets()
+
+    # start = datetime.now()
+    # print(f"Start time: {start}")
+    # # score("ideal")
+    # results_plotter(score("ideal"))
+    # end = datetime.now()
+    # print(f"End time: {end}")
+    # duration = end - start
+    # print(f"Duration: {duration}")
+    # shifting_pattern("quarters")
+    # unique_sprockets()
