@@ -425,7 +425,8 @@ def score(pattern):
     print("score done")
     return(scores_dict)
 
-def results_plotter(score_dict):
+def results_plotter_matplotlib(score_dict):
+
     plt.figure(figsize=(10, 10))
     leader = 1
     for key, df in score_dict.items():
@@ -437,7 +438,7 @@ def results_plotter(score_dict):
         if x_value.iloc[0] < leader:
             leader = x_value.iloc[0]
             leader_key = key
-    
+
     plt.xlabel("Worst Efficiency")
     plt.ylabel("Range")
     plt.title("Score DataFrames Scatter Plot")
@@ -447,6 +448,14 @@ def results_plotter(score_dict):
     plt.savefig("plot2.png")
     print("results_plotter done")
     return
+
+def results_plotter_fast():
+    """
+    Input:
+    Scores database for all
+    Returns:
+
+    """
 
 def input_parameters(realin,generatedin,no_in_rear,largest_rear):
     real = realin
@@ -470,7 +479,7 @@ if __name__ == "__main__":
     # shifting_pattern("quarters")
     # unique_sprockets()
     time_dict = {}
-    for i in range(12):
+    for i in range(5):
         start = time.time()
         no_in_rear = 6
         largest_rear = 16 + i
@@ -479,14 +488,18 @@ if __name__ == "__main__":
         real = False
         generated = True
         best_cadence()
-        score("quarters")
+        results_plotter("quarters")
         end = time.time()
         duration = end - start
         key = number_generated
         time_dict[key] = duration
+
     with open("time_dict1.csv", "w") as csv_file:
+        gearnum = time_dict.keys()
+        times = time_dict.values()
+        stats = zip(gearnum, times)
         writer = csv.writer(csv_file, delimiter=",")
-        writer.writerow(time_dict.keys())
-        writer.writerow(time_dict.values())
+        writer.writerows(stats)
+        # writer.writerow(time_dict.values())
     print(time_dict)
         # input_parameters(False, True, 6, largest_rear)
