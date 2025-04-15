@@ -10,6 +10,7 @@ import pytest
 from itertools import combinations
 from datetime import datetime
 import csv
+import time
 
 def csv_2_dataframe(csv_file):
     """
@@ -59,7 +60,7 @@ def sprocket_generator(max_rear = 6, max_front = 2, smallest_rear = 11, largest_
     for cassette in cassette_combinations:
         key = "-".join(map(str, cassette))
         cassette_options[key] = (cassette)
-
+    global number_generated
     number_generated = len(cassette_combinations)
     print(f"sprocket_generator done, generated: {number_generated}")
 
@@ -469,8 +470,8 @@ if __name__ == "__main__":
     # shifting_pattern("quarters")
     # unique_sprockets()
     time_dict = {}
-    for i in range(7):
-        start = datetime.now()
+    for i in range(12):
+        start = time.time()
         no_in_rear = 6
         largest_rear = 16 + i
         sprocket_params = (no_in_rear, 2, 11, largest_rear, 34, 50)
@@ -479,12 +480,13 @@ if __name__ == "__main__":
         generated = True
         best_cadence()
         score("quarters")
-        end = datetime.now()
+        end = time.time()
         duration = end - start
-        key = 16+i
+        key = number_generated
         time_dict[key] = duration
-    with open("time_dict.csv", "w") as f:
-        writer = csv.writer(f, delimiter=":")
-        writer.writerows(time_dict.keys())
+    with open("time_dict1.csv", "w") as csv_file:
+        writer = csv.writer(csv_file, delimiter=",")
+        writer.writerow(time_dict.keys())
+        writer.writerow(time_dict.values())
     print(time_dict)
         # input_parameters(False, True, 6, largest_rear)
