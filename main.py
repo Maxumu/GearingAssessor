@@ -11,6 +11,7 @@ from itertools import combinations
 from datetime import datetime
 import csv
 import time
+from config import GearConfig
 
 def csv_2_dataframe(csv_file):
     """
@@ -24,9 +25,8 @@ def csv_2_dataframe(csv_file):
     read_rear_string = read_csv.head()
     # print("csv_2_dataframe done")
     return read_csv
-    
 
-def sprocket_generator(max_rear = 6, max_front = 2, smallest_rear = 11, largest_rear = 22, smallest_front = 34, largest_front = 54):
+def sprocket_generator(config: GearConfig):
     """
     Input:
         Number of sprockets, number of chainrings
@@ -50,11 +50,11 @@ def sprocket_generator(max_rear = 6, max_front = 2, smallest_rear = 11, largest_
         Rear sprocket number = 12
         Front chainring number = 2
     """
+    # Imports arguments from config file
+    possible_sprockets = list(range(config.smallest_rear, config.largest_rear + 1))
+    cassette_combinations = list(combinations(possible_sprockets, config.max_rear))
 
     # Generates options for rear sprockets
-
-    possible_sprockets = list(range(smallest_rear, largest_rear + 1))
-    cassette_combinations = list(combinations(possible_sprockets, max_rear))
 
     cassette_options = {}
     for cassette in cassette_combinations:
@@ -457,17 +457,23 @@ def results_plotter_fast():
 
     """
 
-def input_parameters(realin,generatedin,no_in_rear,largest_rear):
-    real = realin
-    generated = generatedin
-    sprocket_params = (no_in_rear, 2, 11, largest_rear, 34, 50)
-    chainring_params = (50, 34)
-    score("quarters")
-    return
+# def input_parameters(realin,generatedin,no_in_rear,largest_rear):
+#     real = realin
+#     generated = generatedin
+#     sprocket_params = (no_in_rear, 2, 11, largest_rear, 34, 50)
+#     chainring_params = (50, 34)
+#     score("quarters")
+#     return
+
+def main():
+    """
+    Initialises config file available to all functions
+    """
+    config = GearConfig()
 
 if __name__ == "__main__":
     print("Running")
-
+    main()
     # start = datetime.now()
     # print(f"Start time: {start}")
     # # score("ideal")
@@ -478,6 +484,7 @@ if __name__ == "__main__":
     # print(f"Duration: {duration}")
     # shifting_pattern("quarters")
     # unique_sprockets()
+
     time_dict = {}
     for i in range(5):
         start = time.time()
@@ -488,7 +495,7 @@ if __name__ == "__main__":
         real = False
         generated = True
         best_cadence()
-        results_plotter("quarters")
+        results_plotter_matplotlib(score("quarters"))
         end = time.time()
         duration = end - start
         key = number_generated
