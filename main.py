@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from itertools import combinations
 import csv
 import time
+
 from config import GearConfig
 
 def csv_2_dataframe(csv_file):
@@ -86,7 +87,6 @@ def calculate_ratios(config: GearConfig):
     Returns:
         Long dataframe with ratios between rear and front
     """
-
     # Reads dataframes and puts in a flat dataframe
     read_rear = csv_2_dataframe('gearing_database.csv')
     read_front = csv_2_dataframe('front_gears.csv')
@@ -371,13 +371,12 @@ def score(config: GearConfig,pattern):
     """
     Input:
         Groupset dataframe with ratio jumps
-    Returns in dict with groupset key:
+    Returns single long dataframe with groupset id column:
         Optimal gear jump
         Worst gear jump
         Avg gear jump - optimal gear jump
-        FUTURE: efficiency from bio data
         """
-    scores_dict = {}
+    all_scores = []
     groupsets = calculate_jumps(config,pattern)
 
     for key, df in groupsets.items():
@@ -396,35 +395,41 @@ def score(config: GearConfig,pattern):
 
         # Finds proportional difference from optimal cadence, applies it to efficiency func for worst efficiency shift
         best_cad = peak_cadence
-        effective_cadence = (worst_jump_diff / optimal_jump)*best_cad
+        effective_cadence = (worst_jump_diff / optimal_jump) * best_cad
         worst_efficiency = efficiency(effective_cadence)
 
         # Calculates average jump across whole groupset, compares to optimal
         average_jump = df["Jump_avg"].mean()
         avg_to_opt = abs(average_jump - optimal_jump)
 
-        # Builds list of scores
-        score.append([optimal_jump,worst_jump_diff,avg_to_opt,average_jump,range,worst_efficiency,biggest_jump,smallest_jump,effective_cadence])
-
-        # Converts list of scores to dataframe
-        scores = pd.DataFrame(score, columns = ["Optimal Jump","Worst Diff to Optimal","Avg Diff to Optimal","Average jump","Range","Worst Efficiency","Biggest Jump","Smallest Jump","Effective Cadence"])
-
+        all_scores.append({
+            "Groupset": key,
+            "Optimal Jump": optimal_jump,
+            "Worst Diff to Optimal": worst_jump_diff,
+            "Avg Diff to Optimal": avg_to_opt,
+            "Average jump": average_jump,
+            "Range": range,
+            "Worst Efficiency": worst_efficiency,
+            "Biggest Jump": biggest_jump,
+            "Smallest Jump": smallest_jump,
+            "Effective Cadence": effective_cadence
+        })
         # Adds dataframe for each groupest to dictionary of scores
-        scores_dict[key] = scores
+        all_scores_df = pd.DataFrame(all_scores)
 
     # SHIM11_30TDF = scores_dict['11-30 Shimano 12_TDF Pro']
 
     print("score done")
-    return(scores_dict)
+    return(all_scores_df)
 
-def results_plotter_matplotlib(score_dict):
+def results_plotter_matplotlib(all_scores_df):
 
     plt.figure(figsize=(10, 10))
     leader = 1
-    for key, df in score_dict.items():
+    for key, group in all_scores_df.groupby("Groupset"):
         # Extract the values for plotting
-        x_value = df["Worst Efficiency"]
-        y_value = df["Range"]
+        x_value = group["Worst Efficiency"]
+        y_value = group["Range"]
         plt.scatter(x_value, y_value, label=key)
         # plt.text(x_value, y_value, key, fontsize=6, ha='right')
         if x_value.iloc[0] < leader:
@@ -480,14 +485,9 @@ if __name__ == "__main__":
     time_dict = {}
     for i in range(5):
         start = time.time()
-        no_in_rear = 6
-        largest_rear = 16 + i
-        sprocket_params = (no_in_rear, 2, 11, largest_rear, 34, 50)
         chainring_params = (50, 34)
-        real = False
-        generated = True
         best_cadence()
-        config = GearConfig()
+        config = GearConfig(use_real=False,use_generated=True,max_rear=6,largest_rear=16+i)
         results_plotter_matplotlib(score(config,"quarters"))
         end = time.time()
         duration = end - start
