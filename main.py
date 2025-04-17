@@ -1,14 +1,8 @@
-from os.path import realpath
 import pandas as pd
 import numpy as np
-from numpy.f2py.symbolic import normalize
-from pandas.conftest import indexer_al
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
-import hypothesis
-import pytest
 from itertools import combinations
-from datetime import datetime
 import csv
 import time
 from config import GearConfig
@@ -66,9 +60,9 @@ def sprocket_generator(config: GearConfig):
 
     return(cassette_options)
 
-def gearset_generator(sprocket_params,chainring_params=[50,34]):
+def gearset_generator(config: GearConfig, chainring_params =[50,34]):
 
-    cassette_options = sprocket_generator(*sprocket_params)
+    cassette_options = sprocket_generator(config)
     data = []
     chainring_descriptor = "-".join(map(str,chainring_params))
 
@@ -85,7 +79,7 @@ def gearset_generator(sprocket_params,chainring_params=[50,34]):
     print("gearset_generator done")
     return(generated_gearsets)
 
-def calculate_ratios(real,generated):
+def calculate_ratios(config: GearConfig):
     """
     Input:
         CSV files of gear ratios from front and rear
@@ -101,18 +95,18 @@ def calculate_ratios(real,generated):
     real_gear_combinations = flat_rear.merge(flat_front, how="cross")
 
     # Makes generated flat dataframe
-    generated_gearsets = gearset_generator(sprocket_params, chainring_params)
+    generated_gearsets = gearset_generator(config)
 
-    if real and generated:
+    if config.use_real and config.use_generated:
         gear_combinations = pd.concat([real_gear_combinations, generated_gearsets])
 
-    elif not real and generated:
+    elif not config.use_real and config.use_generated:
         gear_combinations = generated_gearsets
 
-    elif real and not generated:
+    elif config.use_real and not config.use_generated:
         gear_combinations = real_gear_combinations
 
-    elif not real and not generated:
+    elif not config.use_real and not config.use_generated:
         print("No gears to analyse")
         return
 
@@ -148,19 +142,19 @@ def unique_sprockets():
     Output:
         Unique rear sprocket tooth numbers
     """
-    long_real = calculate_ratios(True,False)
+    long_real = calculate_ratios(config.use_real,config.use_generated)
     unique = long_real['RearTeeth'].unique()
     print(np.sort(unique))
     return
 
-def drivetrain_splitter():
+def drivetrain_splitter(config: GearConfig):
     """
     Input:
         Long dataframe with all gears and ratios
     Returns:
         Dictionary of drivetrain dataframes, each one named by 'cassete_chainring'
     """
-    gear_combinations = calculate_ratios(real,generated)
+    gear_combinations = calculate_ratios(config)
 
     # Splits long dataframe into individual drivetrains and stores in dictionary
     drivetrains = {}
@@ -181,7 +175,7 @@ def drivetrain_splitter():
     print("drivetrain_splitter done")
     return(drivetrains)
 
-def shifting_pattern(pattern):
+def shifting_pattern(config: GearConfig, pattern):
     """Sorts the gears into a shifting pattern based on the selected input
 
     Input:
@@ -190,7 +184,7 @@ def shifting_pattern(pattern):
         Gear combinations flat dataframe
         """
 
-    drivetrains = drivetrain_splitter()
+    drivetrains = drivetrain_splitter(config)
 
     # Chooses the pattern to sort the dataframe
     for key,drivetrain in drivetrains.items():
@@ -252,14 +246,14 @@ def shifting_pattern(pattern):
     return(drivetrains)
 
 
-def calculate_jumps(pattern):
+def calculate_jumps(config: GearConfig, pattern):
     """
     Input:
         Pandas dataframe formatted database for each single combination
     Returns:
         Jumps for each gear and adds them to each single combination
     """
-    drivetrains = shifting_pattern(pattern)
+    drivetrains = shifting_pattern(config,pattern)
 
     for key, df in drivetrains.items():
         df["Jump_up"] = abs(1-(df["GearRatio"] / df["GearRatio"].shift(-1)))
@@ -338,9 +332,7 @@ def best_cadence():
         Best cadence in RPM
     """
     # Set derivative of func = 0 to find maximum
-    parameters = cadence_reference()
-    fit_A = parameters[0]
-    fit_B = parameters[1]
+    cadence_reference()
     global peak_cadence
     peak_cadence = (-fit_B) / (2 * fit_A)
 
@@ -375,7 +367,7 @@ def efficiency(cadence_in):
     # print("efficiency done")
     return(y_normal_quad_func)
 
-def score(pattern):
+def score(config: GearConfig,pattern):
     """
     Input:
         Groupset dataframe with ratio jumps
@@ -386,7 +378,7 @@ def score(pattern):
         FUTURE: efficiency from bio data
         """
     scores_dict = {}
-    groupsets = calculate_jumps(pattern)
+    groupsets = calculate_jumps(config,pattern)
 
     for key, df in groupsets.items():
         score = []
@@ -495,7 +487,8 @@ if __name__ == "__main__":
         real = False
         generated = True
         best_cadence()
-        results_plotter_matplotlib(score("quarters"))
+        config = GearConfig()
+        results_plotter_matplotlib(score(config,"quarters"))
         end = time.time()
         duration = end - start
         key = number_generated
