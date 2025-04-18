@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+# from fontTools.varLib.varStore import storeancer
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from itertools import combinations
@@ -7,6 +8,7 @@ import csv
 import time
 
 from config import GearConfig
+from config import VarStore
 
 def csv_2_dataframe(csv_file):
     """
@@ -309,12 +311,10 @@ def cadence_reference():
 
     # Uses curve_fit to fit quadratic function as defined to the cadence and efficiency
     parameters,covarience = curve_fit(quadratic,cadence,efficiency)
-    global fit_A
-    global fit_B
-    global fit_C
     fit_A = parameters[0]
     fit_B = parameters[1]
     fit_C = parameters[2]
+    store = VarStore(fit_A = fit_A, fit_B = fit_B, fit_C = fit_C)
 
     # Plots fitted quadratic curve on same axis as datapoints and saves png to file
     # fit_efficiency = quadratic(high_res_cadence, fit_A, fit_B, fit_C)
@@ -322,7 +322,7 @@ def cadence_reference():
     # plt.savefig("plot.png")
 
     # print("cadence_reference done")
-    return(parameters)
+    return(store)
 
 def best_cadence():
     """
@@ -332,22 +332,27 @@ def best_cadence():
         Best cadence in RPM
     """
     # Set derivative of func = 0 to find maximum
-    cadence_reference()
-    global peak_cadence
-    peak_cadence = (-fit_B) / (2 * fit_A)
+    store = cadence_reference()
+    peak_cadence = (-store.fit_B) / (2 * store.fit_A)
+    store.peak_cadence = peak_cadence
 
     # print("best_cadence done")
     return()
 
-def efficiency(cadence_in):
+def efficiency(cadence_in,store: VarStore):
     """
     Input:
         Cadence in rpm
     Returns:
         Normalised efficiency as proportion of maximum
     """
-    best_cad = peak_cadence
-    peak_efficiency = (fit_A*(best_cad**2) + fit_B*(best_cad) + fit_C)
+
+    fit_A = store.fit_A
+    fit_B = store.fit_B
+    fit_C = store.fit_C
+
+    peak_cadence = store.peak_cadence
+    peak_efficiency = (fit_A*(peak_cadence**2) + fit_B*(peak_cadence) + fit_C)
 
     # Calculates efficiency for input cadence
     efficiency_out = quadratic(cadence_in,fit_A,fit_B,fit_C)
@@ -367,7 +372,7 @@ def efficiency(cadence_in):
     # print("efficiency done")
     return(y_normal_quad_func)
 
-def score(config: GearConfig,pattern):
+def score(config: GearConfig,store: VarStore,pattern):
     """
     Input:
         Groupset dataframe with ratio jumps
@@ -394,9 +399,8 @@ def score(config: GearConfig,pattern):
         worst_jump_diff = max(worst_jump_diff_small,worst_jump_diff_big)
 
         # Finds proportional difference from optimal cadence, applies it to efficiency func for worst efficiency shift
-        best_cad = peak_cadence
-        effective_cadence = (worst_jump_diff / optimal_jump) * best_cad
-        worst_efficiency = efficiency(effective_cadence)
+        effective_cadence = (worst_jump_diff / optimal_jump) * store.peak_cadence
+        worst_efficiency = efficiency(effective_cadence,store)
 
         # Calculates average jump across whole groupset, compares to optimal
         average_jump = df["Jump_avg"].mean()
@@ -486,9 +490,14 @@ if __name__ == "__main__":
     for i in range(5):
         start = time.time()
         chainring_params = (50, 34)
+
+    """
+    NEED TO FIGURE OUT HOW TO INITIALISE STORE.
+    IF IT GETS INITIALISED IN CADENCE REFERENCE, THEN THAT NEEDS TO RUN FIRST. AFTER IT HAS RUN THAT CAN BE PASSED TO THE NEXT FUNCTION
+    """
         best_cadence()
         config = GearConfig(use_real=False,use_generated=True,max_rear=6,largest_rear=16+i)
-        results_plotter_matplotlib(score(config,"quarters"))
+        results_plotter_matplotlib(score(config,store,"quarters"))
         end = time.time()
         duration = end - start
         key = number_generated

@@ -11,3 +11,10 @@ class GearConfig:
     chainring_teeth: list = (50, 34)
     use_real: bool = False
     use_generated: bool = True
+
+@dataclass
+class VarStore:
+    fit_A: float = None
+    fit_B: float = None
+    fit_C: float = None
+    peak_cadence: float = None
