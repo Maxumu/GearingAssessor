@@ -324,7 +324,7 @@ def cadence_reference():
     # print("cadence_reference done")
     return(store)
 
-def best_cadence():
+def best_cadence(store: VarStore):
     """
     Input:
         Derivative of fitted cadence/efficiency curve to find optimal cadence
@@ -332,12 +332,12 @@ def best_cadence():
         Best cadence in RPM
     """
     # Set derivative of func = 0 to find maximum
-    store = cadence_reference()
+    # store = cadence_reference()
     peak_cadence = (-store.fit_B) / (2 * store.fit_A)
     store.peak_cadence = peak_cadence
 
     # print("best_cadence done")
-    return()
+    return(store)
 
 def efficiency(cadence_in,store: VarStore):
     """
@@ -490,12 +490,8 @@ if __name__ == "__main__":
     for i in range(5):
         start = time.time()
         chainring_params = (50, 34)
-
-    """
-    NEED TO FIGURE OUT HOW TO INITIALISE STORE.
-    IF IT GETS INITIALISED IN CADENCE REFERENCE, THEN THAT NEEDS TO RUN FIRST. AFTER IT HAS RUN THAT CAN BE PASSED TO THE NEXT FUNCTION
-    """
-        best_cadence()
+        store = cadence_reference()
+        store = best_cadence(store)
         config = GearConfig(use_real=False,use_generated=True,max_rear=6,largest_rear=16+i)
         results_plotter_matplotlib(score(config,store,"quarters"))
         end = time.time()
