@@ -406,6 +406,10 @@ def score(config: GearConfig,store: VarStore,pattern):
         average_jump = df["Jump_avg"].mean()
         avg_to_opt = abs(average_jump - optimal_jump)
 
+        '''
+        Should there be a measure of front shifts here to penalise too much shifting?
+        '''
+
         all_scores.append({
             "Groupset": key,
             "Optimal Jump": optimal_jump,
@@ -425,6 +429,9 @@ def score(config: GearConfig,store: VarStore,pattern):
 
     print("score done")
     return(all_scores_df)
+
+def best_finder():
+    ""
 
 def results_plotter_matplotlib(all_scores_df):
 
@@ -487,12 +494,12 @@ if __name__ == "__main__":
     # unique_sprockets()
 
     time_dict = {}
-    for i in range(5):
+    for i in range(1):
         start = time.time()
         chainring_params = (50, 34)
         store = cadence_reference()
         store = best_cadence(store)
-        config = GearConfig(use_real=False,use_generated=True,max_rear=6,largest_rear=16+i)
+        config = GearConfig(use_real=False,use_generated=True,max_rear=11,largest_rear=23+i)
         results_plotter_matplotlib(score(config,store,"quarters"))
         end = time.time()
         duration = end - start
