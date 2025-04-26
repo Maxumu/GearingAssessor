@@ -406,9 +406,13 @@ def score(config: GearConfig,store: VarStore,pattern):
         # Calculates average jump across whole groupset, compares to optimal
         average_jump = df["Jump_avg"].mean()
         avg_to_opt = abs(average_jump - optimal_jump)
+        avg_to_opt_proportional = avg_to_opt / optimal_jump
+
+        # Calculates number of front shifts
+        front_changes = (df["FrontTeeth"] != df["FrontTeeth"].shift()).sum() -1
 
         # Calculates single combo_score from all measures
-        combo_score = abs(worst_efficiency)-1 + avg_to_opt
+        combo_score = abs(worst_efficiency)-1 + avg_to_opt_proportional*10 + front_changes - 4
 
         '''
         Should there be a measure of front shifts here to penalise too much shifting?
@@ -416,15 +420,16 @@ def score(config: GearConfig,store: VarStore,pattern):
 
         all_scores.append({
             "Groupset": key,
-            # "Optimal Jump": optimal_jump,
-            # "Worst Diff to Optimal": worst_jump_diff,
-            # "Avg Diff to Optimal": avg_to_opt,
-            # "Average jump": average_jump,
+            "Optimal Jump": optimal_jump,
+            "Worst Diff to Optimal": worst_jump_diff,
+            "Avg Diff to Optimal": avg_to_opt,
+            "Average jump": average_jump,
             "Range": range,
             "Worst Efficiency": worst_efficiency,
-            # "Biggest Jump": biggest_jump,
-            # "Smallest Jump": smallest_jump,
-            # "Effective Cadence": effective_cadence
+            "Biggest Jump": biggest_jump,
+            "Smallest Jump": smallest_jump,
+            "Effective Cadence": effective_cadence,
+            "Combo Score": combo_score
         })
 
     # Converts to dataframe
@@ -451,12 +456,13 @@ def get_data(config: GearConfig,store: VarStore,pattern,force_recompute=False):
         all_scores_df.to_parquet(CACHE_FILE)
     return(all_scores_df)
 
-def best_finder():
+def best_finder(config: GearConfig, store: VarStore, pattern):
     """
     Takes in scores dataframe and decides which gearsets are best
     """
-    df[combo]
-    combo_score =
+    all_scores_df = get_data(config,store,pattern)
+    
+    print("working")
 
 def results_plotter_matplotlib(all_scores_df):
 
@@ -522,21 +528,22 @@ def main():
     config = GearConfig(max_front=2,
                         max_rear=12,
                         smallest_rear=11,
-                        largest_rear=28,
+                        largest_rear=24,
                         smallest_front=34,
                         largest_front=50,
                         chainring_teeth=(50,34),
                         use_real=False,
                         use_generated=True)
-
     # Creates instance of store and loads with quadratic params
     store = cadence_reference()
     # Adds peak cadence to store instance
     store = best_cadence(store)
     # Checks if score has a cache and runs it if not (can force to run)
     get_data(config,store,"quarters",force_recompute=True)
+    # Finds best gears based on measures
+    best_finder(config,store,pattern="quarters")
     # Plots data using matplotlib
-    results_plotter_matplotlib(get_data(config,store,"quarters"))
+    # results_plotter_matplotlib(get_data(config,store,"quarters"))
     # Stops run timer and finds duration
     end = time.time()
     duration = end - start
