@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from itertools import combinations
 import csv
 import time
+import os
 
 from config import GearConfig
 from config import VarStore
@@ -430,6 +431,23 @@ def score(config: GearConfig,store: VarStore,pattern):
     print("score done")
     return(all_scores_df)
 
+def get_data(config: GearConfig,store: VarStore,pattern,force_recompute=False):
+    '''
+    If parquet already saved and not forced recompute return dataframe
+    Else runs score and saves the output as a parquet file, then returns the dataframe
+    '''
+    CACHE_FILE = "bigdata.parquet"
+    META_FILE = "bigdata.meta"
+
+    if os.path.exists(CACHE_FILE) and not force_recompute:
+        print("loading cached data")
+        all_scores_df = pd.read_parquet(CACHE_FILE)
+    else:
+        print("creating cached data")
+        all_scores_df = score(config,store,pattern)
+        all_scores_df.to_parquet(CACHE_FILE)
+    return(all_scores_df)
+
 def best_finder():
     ""
 
@@ -457,31 +475,69 @@ def results_plotter_matplotlib(all_scores_df):
     print("results_plotter done")
     return
 
-def results_plotter_fast():
+def time_predict():
     """
-    Input:
-    Scores database for all
-    Returns:
-
+    Predicts time for large datasets
     """
+    time_dict = {}
+    for i in range(1):
+        start = time.time()
+        chainring_params = (50, 34)
+        store = cadence_reference()
+        store = best_cadence(store)
+        config = GearConfig(use_real=False, use_generated=True, max_rear=11, largest_rear=23 + i)
+        results_plotter_matplotlib(score(config, store, "quarters"))
+        end = time.time()
+        duration = end - start
+        key = number_generated
+        time_dict[key] = duration
 
-# def input_parameters(realin,generatedin,no_in_rear,largest_rear):
-#     real = realin
-#     generated = generatedin
-#     sprocket_params = (no_in_rear, 2, 11, largest_rear, 34, 50)
-#     chainring_params = (50, 34)
-#     score("quarters")
-#     return
+    # Saves times from each iteration to csv file to predict large dataset time
+
+    with open("time_dict1.csv", "w") as csv_file:
+        gearnum = time_dict.keys()
+        times = time_dict.values()
+        stats = zip(gearnum, times)
+        writer = csv.writer(csv_file, delimiter=",")
+        writer.writerows(stats)
+        # writer.writerow(time_dict.values())
+    print(time_dict)
+    # input_parameters(False, True, 6, largest_rear)
 
 def main():
     """
     Initialises config file available to all functions
     """
-    config = GearConfig()
+    # Starts run timer
+    start = time.time()
+    print(f"Start time: {start}")
+    # Creates instance with config values
+    config = GearConfig(max_front=2,
+                        smallest_rear=11,
+                        largest_rear=23,
+                        smallest_front=34,
+                        largest_front=50,
+                        chainring_teeth=(50,34),
+                        use_real=False,
+                        use_generated=True)
+
+    # Creates instance of store and loads with quadratic params
+    store = cadence_reference()
+    # Adds peak cadence to store instance
+    store = best_cadence(store)
+    # Checks if score has a cache and runs it if not (can force to run)
+    get_data(config,store,"quarters",force_recompute=True)
+    # Plots data using matplotlib
+    results_plotter_matplotlib(get_data(config,store,"quarters"))
+    # Stops run timer and finds duration
+    end = time.time()
+    duration = end - start
+    print(f"Duration (s): {duration}")
 
 if __name__ == "__main__":
     print("Running")
     main()
+
     # start = datetime.now()
     # print(f"Start time: {start}")
     # # score("ideal")
@@ -492,26 +548,3 @@ if __name__ == "__main__":
     # print(f"Duration: {duration}")
     # shifting_pattern("quarters")
     # unique_sprockets()
-
-    time_dict = {}
-    for i in range(1):
-        start = time.time()
-        chainring_params = (50, 34)
-        store = cadence_reference()
-        store = best_cadence(store)
-        config = GearConfig(use_real=False,use_generated=True,max_rear=11,largest_rear=23+i)
-        results_plotter_matplotlib(score(config,store,"quarters"))
-        end = time.time()
-        duration = end - start
-        key = number_generated
-        time_dict[key] = duration
-
-    with open("time_dict1.csv", "w") as csv_file:
-        gearnum = time_dict.keys()
-        times = time_dict.values()
-        stats = zip(gearnum, times)
-        writer = csv.writer(csv_file, delimiter=",")
-        writer.writerows(stats)
-        # writer.writerow(time_dict.values())
-    print(time_dict)
-        # input_parameters(False, True, 6, largest_rear)
