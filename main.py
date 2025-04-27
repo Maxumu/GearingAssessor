@@ -7,6 +7,7 @@ from itertools import combinations
 import csv
 import time
 import os
+from tqdm import tqdm
 
 from config import GearConfig
 from config import VarStore
@@ -53,11 +54,10 @@ def sprocket_generator(config: GearConfig):
     cassette_combinations = list(combinations(possible_sprockets, config.max_rear))
 
     # Generates options for rear sprockets
-
     cassette_options = {}
     for cassette in cassette_combinations:
         key = "-".join(map(str, cassette))
-        cassette_options[key] = (cassette)
+        cassette_options[key] = cassette
     global number_generated
     number_generated = len(cassette_combinations)
     print(f"sprocket_generator done, generated: {number_generated}")
@@ -171,10 +171,10 @@ def drivetrain_splitter(config: GearConfig):
     #         df.to_excel(writer, sheet_name=sheet_name, index=False)
 
     # Converts to html table for easy viewing
-    html_combinations = gear_combinations.to_html()
-    text_file = open("html_combinations.html", "w")
-    text_file.write(html_combinations)
-    text_file.close()
+    # html_combinations = gear_combinations.to_html()
+    # text_file = open("html_combinations.html", "w")
+    # text_file.write(html_combinations)
+    # text_file.close()
     print("drivetrain_splitter done")
     return(drivetrains)
     
@@ -394,7 +394,7 @@ def score(config: GearConfig,store: VarStore,pattern):
 
         # Calculates worst gear changes
         biggest_jump = np.nanmax(df[["Jump_up","Jump_down"]].to_numpy())
-        smallest_jump = np.nanmax(df[["Jump_up","Jump_down"]].to_numpy())
+        smallest_jump = np.nanmin(df[["Jump_up","Jump_down"]].to_numpy())
         worst_jump_diff_big = biggest_jump - optimal_jump
         worst_jump_diff_small = smallest_jump - optimal_jump
         worst_jump_diff = max(worst_jump_diff_small,worst_jump_diff_big)
@@ -406,6 +406,13 @@ def score(config: GearConfig,store: VarStore,pattern):
         # Calculates average jump across whole groupset, compares to optimal
         average_jump = df["Jump_avg"].mean()
         avg_to_opt = abs(average_jump - optimal_jump)
+        avg_to_opt_proportional = avg_to_opt / optimal_jump
+
+        # Calculates number of front shifts
+        front_changes = (df["FrontTeeth"] != df["FrontTeeth"].shift()).sum() -1
+
+        # Calculates single combo_score from all measures
+        combo_score = abs(worst_efficiency)-1 + avg_to_opt_proportional*10 + front_changes - 4
 
         '''
         Should there be a measure of front shifts here to penalise too much shifting?
@@ -421,13 +428,15 @@ def score(config: GearConfig,store: VarStore,pattern):
             "Worst Efficiency": worst_efficiency,
             "Biggest Jump": biggest_jump,
             "Smallest Jump": smallest_jump,
-            "Effective Cadence": effective_cadence
+            "Effective Cadence": effective_cadence,
+            "Combo Score": combo_score
         })
-        # Adds dataframe for each groupest to dictionary of scores
-        all_scores_df = pd.DataFrame(all_scores)
+
+    # Converts to dataframe
+    all_scores_df = pd.DataFrame(all_scores)
+    print(f"Rows in score: {all_scores_df.shape[0]}")
 
     # SHIM11_30TDF = scores_dict['11-30 Shimano 12_TDF Pro']
-
     print("score done")
     return(all_scores_df)
 
@@ -437,7 +446,6 @@ def get_data(config: GearConfig,store: VarStore,pattern,force_recompute=False):
     Else runs score and saves the output as a parquet file, then returns the dataframe
     '''
     CACHE_FILE = "bigdata.parquet"
-    META_FILE = "bigdata.meta"
 
     if os.path.exists(CACHE_FILE) and not force_recompute:
         print("loading cached data")
@@ -448,8 +456,13 @@ def get_data(config: GearConfig,store: VarStore,pattern,force_recompute=False):
         all_scores_df.to_parquet(CACHE_FILE)
     return(all_scores_df)
 
-def best_finder():
-    ""
+def best_finder(config: GearConfig, store: VarStore, pattern):
+    """
+    Takes in scores dataframe and decides which gearsets are best
+    """
+    all_scores_df = get_data(config,store,pattern)
+
+    print("working")
 
 def results_plotter_matplotlib(all_scores_df):
 
@@ -513,38 +526,31 @@ def main():
     print(f"Start time: {start}")
     # Creates instance with config values
     config = GearConfig(max_front=2,
+                        max_rear=12,
                         smallest_rear=11,
-                        largest_rear=23,
+                        largest_rear=30,
                         smallest_front=34,
                         largest_front=50,
                         chainring_teeth=(50,34),
                         use_real=False,
                         use_generated=True)
-
     # Creates instance of store and loads with quadratic params
     store = cadence_reference()
     # Adds peak cadence to store instance
     store = best_cadence(store)
     # Checks if score has a cache and runs it if not (can force to run)
     get_data(config,store,"quarters",force_recompute=True)
+    # Finds best gears based on measures
+    best_finder(config,store,pattern="quarters")
     # Plots data using matplotlib
-    results_plotter_matplotlib(get_data(config,store,"quarters"))
+    # results_plotter_matplotlib(get_data(config,store,"quarters"))
     # Stops run timer and finds duration
     end = time.time()
     duration = end - start
     print(f"Duration (s): {duration}")
 
 if __name__ == "__main__":
-    print("Running")
+    print("Running main")
     main()
 
-    # start = datetime.now()
-    # print(f"Start time: {start}")
-    # # score("ideal")
-    # results_plotter(score("ideal"))
-    # end = datetime.now()
-    # print(f"End time: {end}")
-    # duration = end - start
-    # print(f"Duration: {duration}")
-    # shifting_pattern("quarters")
     # unique_sprockets()
