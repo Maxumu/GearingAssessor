@@ -461,7 +461,7 @@ def best_finder(config: GearConfig, store: VarStore, pattern):
     Takes in scores dataframe and decides which gearsets are best
     """
     all_scores_df = get_data(config,store,pattern)
-    
+
     print("working")
 
 def results_plotter_matplotlib(all_scores_df):
@@ -528,7 +528,7 @@ def main():
     config = GearConfig(max_front=2,
                         max_rear=12,
                         smallest_rear=11,
-                        largest_rear=24,
+                        largest_rear=30,
                         smallest_front=34,
                         largest_front=50,
                         chainring_teeth=(50,34),
