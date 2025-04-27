@@ -177,7 +177,7 @@ def drivetrain_splitter(config: GearConfig):
     text_file.close()
     print("drivetrain_splitter done")
     return(drivetrains)
-
+    
 def shifting_pattern(config: GearConfig, pattern):
     """Sorts the gears into a shifting pattern based on the selected input
 
