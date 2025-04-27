@@ -138,7 +138,7 @@ def calculate_ratios(config: GearConfig):
     print("calculate_ratios done")
     return(gear_combinations)
 
-def unique_sprockets():
+def unique_sprockets(config: GearConfig):
     """
     Input:
         Long dataframe with all real gears
@@ -412,11 +412,8 @@ def score(config: GearConfig,store: VarStore,pattern):
         front_changes = (df["FrontTeeth"] != df["FrontTeeth"].shift()).sum() -1
 
         # Calculates single combo_score from all measures
-        combo_score = abs(worst_efficiency)-1 + avg_to_opt_proportional*10 + front_changes - 4
+        combo_score = abs(worst_efficiency-1) + avg_to_opt_proportional*10 + front_changes - 3
 
-        '''
-        Should there be a measure of front shifts here to penalise too much shifting?
-        '''
 
         all_scores.append({
             "Groupset": key,
@@ -458,11 +455,29 @@ def get_data(config: GearConfig,store: VarStore,pattern,force_recompute=False):
 
 def best_finder(config: GearConfig, store: VarStore, pattern):
     """
-    Takes in scores dataframe and decides which gearsets are best
+    Takes in scores dataframe and decides which gearsets are best, then seperates them
     """
     all_scores_df = get_data(config,store,pattern)
 
-    print("working")
+    top_rows = []
+    # Defines how much of the score dataframe to hold in ram at once
+    chunk_size = 500_000
+    # Defines what proportion of the score dataframe I want to keep to plot
+    top_size = 100
+    # Goes through dataframe in chunks
+    for start in range(0,len(all_scores_df),chunk_size):
+        chunk = all_scores_df.iloc[start:start+chunk_size]
+        top = chunk.nsmallest(top_size,"Combo Score")
+        top_rows.append(top)
+
+    all_top_rows = pd.concat(top_rows)
+    top_of_top = all_top_rows.nlargest(top_size,"Combo Score")
+
+    top_of_top.to_csv('top_of_top.csv', index=False)
+
+    print("best_finder done")
+    return(top_of_top)
+
 
 def results_plotter_matplotlib(all_scores_df):
 
@@ -528,10 +543,10 @@ def main():
     config = GearConfig(max_front=2,
                         max_rear=12,
                         smallest_rear=11,
-                        largest_rear=30,
-                        smallest_front=34,
-                        largest_front=50,
-                        chainring_teeth=(50,34),
+                        largest_rear=32,
+                        smallest_front=40,
+                        largest_front=54,
+                        chainring_teeth=(54,40),
                         use_real=False,
                         use_generated=True)
     # Creates instance of store and loads with quadratic params
@@ -539,11 +554,13 @@ def main():
     # Adds peak cadence to store instance
     store = best_cadence(store)
     # Checks if score has a cache and runs it if not (can force to run)
-    get_data(config,store,"quarters",force_recompute=True)
+    get_data(config,store,"quarters",force_recompute=False)
     # Finds best gears based on measures
     best_finder(config,store,pattern="quarters")
+
     # Plots data using matplotlib
     # results_plotter_matplotlib(get_data(config,store,"quarters"))
+
     # Stops run timer and finds duration
     end = time.time()
     duration = end - start
