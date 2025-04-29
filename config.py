@@ -8,7 +8,6 @@ class GearConfig:
     largest_rear: int = 20
     smallest_front: int = 34
     largest_front: int = 50
-    chainring_teeth: list = (50, 34)
     use_real: bool = False
     use_generated: bool = True
 

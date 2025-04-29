@@ -254,9 +254,12 @@ def shifting_pattern(config: GearConfig, pattern):
 def calculate_jumps(config: GearConfig, pattern):
     """
     Input:
-        Pandas dataframe formatted database for each single combination
+        Dictionary of pandas dataframes, each one with patterned gearset
+    
+    Calculates jumps for each patterned gearset and adds to dataframes in dictionary.
+    
     Returns:
-        Jumps for each gear and adds them to each single combination
+        Same dictionary of dataframes
     """
     drivetrains = shifting_pattern(config,pattern)
 
@@ -271,21 +274,30 @@ def calculate_jumps(config: GearConfig, pattern):
     #     for sheet_name, df in drivetrains.items():
     #         df.to_excel(writer, sheet_name=sheet_name, index=False)
     # SHIM11_30TDF = drivetrains['11-30 Shimano 12_TDF Pro']
+        
+    # Save each dataframe to its own Parquet file
+    output_dir = "parquet_drivetrains"
+    os.makedirs(output_dir, exist_ok=True)
+
+    for key, df in drivetrains.items():
+        filename = os.path.join(output_dir, f"{key.replace(' ', '_').replace('/', '-')}.parquet")
+        df.to_parquet(filename, index=False)
+    
     print("calculate_jumps done")
     return(drivetrains)
 
-def graph_shifts(config: GearConfig,pattern):
+def graph_shifts(config: GearConfig,pattern,gearsets_to_plot):
     """Takes the data on each of the groupsets with jumps calculated
         Outputs a graph of jumps against each physical gear combination"""
-    labelled_drivetrains = calculate_jumps(config,pattern)
+    # gearsets_to_plot = calculate_jumps(config,pattern)
 
     output_dir = "gear_plots"
     os.makedirs(output_dir, exist_ok=True)
-    
+
     for file in glob.glob(os.path.join(output_dir, "*.png")):
         os.remove(file)
 
-    for name, df in labelled_drivetrains.items():
+    for name, df in gearsets_to_plot.items():
         # Making x axis labels
 
         # Map FrontTeeth to ascending index (smallest = 1, etc.)
@@ -313,9 +325,9 @@ def graph_shifts(config: GearConfig,pattern):
             if rear1 != rear2 and front1 == front2:
                 color = 'blue'   # Rear shift
             elif rear1 == rear2 and front1 != front2:
-                color = 'red'    # Front shift
+                color = 'yellow'    # Front shift
             else:
-                color = 'gray'   # Both shifted
+                color = 'red'   # Both shifted
 
             plt.plot([x1, x2], [y1, y2], color=color, linewidth=2, zorder=1)
 
@@ -524,6 +536,7 @@ def best_finder(config: GearConfig, store: VarStore, pattern):
     top_of_top = all_top_rows.nlargest(top_size,"Combo Score")
 
     top_of_top.to_csv('top_of_top.csv', index=False)
+    top_of_top.to_parquet('top_of_top.parquet')
 
     print("best_finder done")
     return(top_of_top)
@@ -604,10 +617,10 @@ def main():
     store = best_cadence(store)
 
     # Checks if score has a cache and runs it if not (can force to run)
-    get_data(config,store,"quarters",force_recompute=False)
+    get_data(config,store,"quarters",force_recompute=True)
 
-    # Predicts time taken to run large datasets
-    time_predict()
+    # # Predicts time taken to run large datasets
+    # time_predict()
 
     # Finds best gears based on measures
     best_finder(config,store,pattern="quarters")
@@ -616,14 +629,14 @@ def main():
     # results_plotter_matplotlib(get_data(config,store,"quarters"))
 
     # Plots ratios across patterned gearset
-    graph_shifts(config,pattern="quarters")
+    graph_shifts(config,pattern="quarters",gearsets_to_plot=parquet_drivetrains)
 
     # Stops run timer and finds duration
     end = time.time()
     duration = end - start
     print(f"Duration (s): {duration}")
 
-def original_plotting():
+def original_plotting(what_to_plot):
     """
     Performs analysis on real gearsets as spreadsheets did
     """
@@ -641,7 +654,20 @@ def original_plotting():
                         use_generated=False)
     
     # Plots ratios across patterned gearset
-    graph_shifts(config,pattern="ideal")
+    # Sets gearsets to whichever wants plotting (currently real gearsets)
+    if what_to_plot == "real":
+        gearsets = calculate_jumps(config,pattern="ideal")
+    elif what_to_plot == "top_gearsets":
+        # Creates instance of store and loads with quadratic params
+        store = cadence_reference()
+
+        # Adds peak cadence to store instance
+        store = best_cadence(store)
+
+        # Runs best_finder
+        gearsets = pd.read_parquet("top_of_top.parquet")
+
+    graph_shifts(config,pattern="ideal",gearsets_to_plot=gearsets)
 
     # Stops run timer and finds duration
     end = time.time()
@@ -650,6 +676,6 @@ def original_plotting():
 
 if __name__ == "__main__":
     print("Running main")
-    # main()
-    original_plotting()
+    main()
+    # original_plotting("top_gearsets")
     # unique_sprockets()
