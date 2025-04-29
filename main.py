@@ -7,6 +7,7 @@ from itertools import combinations
 import csv
 import time
 import os
+import glob
 from tqdm import tqdm
 
 from config import GearConfig
@@ -64,15 +65,16 @@ def sprocket_generator(config: GearConfig):
 
     return(cassette_options)
 
-def gearset_generator(config: GearConfig, chainring_params =[50,34]):
+def gearset_generator(config: GearConfig):
 
     cassette_options = sprocket_generator(config)
+    chainrings = [config.largest_front,config.smallest_front]
     data = []
-    chainring_descriptor = "-".join(map(str,chainring_params))
+    chainring_descriptor = "-".join(map(str,(chainrings)))
 
     for cassette_key, sprockets in cassette_options.items():
         for rear_teeth in sprockets:
-            for front_teeth in chainring_params:
+            for front_teeth in chainrings:
                 data.append({
                     "Cassette": cassette_key,
                     "RearTeeth": rear_teeth,
@@ -272,13 +274,61 @@ def calculate_jumps(config: GearConfig, pattern):
     print("calculate_jumps done")
     return(drivetrains)
 
-# def graphit():
-#     """Takes the data on each of the groupsets with jumps calculated
-#         Outputs a graph of jumps against each physical gear combination"""
-#     groupsets = calculate_jumps()
-#     for df in groupsets.items():
-#         plt.plot((df["GearRatio"]),(df["Jump_up"]))
-#     return
+def graph_shifts(config: GearConfig,pattern):
+    """Takes the data on each of the groupsets with jumps calculated
+        Outputs a graph of jumps against each physical gear combination"""
+    labelled_drivetrains = calculate_jumps(config,pattern)
+
+    output_dir = "gear_plots"
+    os.makedirs(output_dir, exist_ok=True)
+    
+    for file in glob.glob(os.path.join(output_dir, "*.png")):
+        os.remove(file)
+
+    for name, df in labelled_drivetrains.items():
+        # Making x axis labels
+
+        # Map FrontTeeth to ascending index (smallest = 1, etc.)
+        front_order = {v: i+1 for i, v in enumerate(sorted(df['FrontTeeth'].unique()))}
+
+        # Map RearTeeth to descending index (largest = 1, etc.)
+        rear_order = {v: i+1 for i, v in enumerate(sorted(df['RearTeeth'].unique(), reverse=True))}
+
+        # Assign index columns
+        df['FrontIndex'] = df['FrontTeeth'].map(front_order)
+        df['RearIndex'] = df['RearTeeth'].map(rear_order)
+
+        # Create GearCombo in the form rear_front (e.g., 1_2)
+        df['GearCombo'] = df['RearIndex'].astype(str) + "_" + df['FrontIndex'].astype(str)
+
+        plt.figure(figsize=(12, 6))
+        plt.scatter(df['GearCombo'], df['GearRatio'], color='blue')
+        # Draw colored lines between gear shifts
+        for i in range(len(df) - 1):
+            x1, x2 = df['GearCombo'].iloc[i], df['GearCombo'].iloc[i + 1]
+            y1, y2 = df['GearRatio'].iloc[i], df['GearRatio'].iloc[i + 1]
+            rear1, rear2 = df['RearIndex'].iloc[i], df['RearIndex'].iloc[i + 1]
+            front1, front2 = df['FrontIndex'].iloc[i], df['FrontIndex'].iloc[i + 1]
+
+            if rear1 != rear2 and front1 == front2:
+                color = 'blue'   # Rear shift
+            elif rear1 == rear2 and front1 != front2:
+                color = 'red'    # Front shift
+            else:
+                color = 'gray'   # Both shifted
+
+            plt.plot([x1, x2], [y1, y2], color=color, linewidth=2, zorder=1)
+
+        plt.xticks(rotation=90)  # Rotate x-axis labels for readability
+        plt.xlabel('Gear Combo')
+        plt.ylabel('Gear Ratio')
+        plt.title('Gear Ratios by Gear Combo')
+        plt.grid(True)
+        plt.tight_layout()
+
+        plt.savefig(f"{output_dir}/{name}_gear_ratio.png")
+        plt.close()
+    return
 
 def quadratic(x,a,b,c):
     """
@@ -510,7 +560,6 @@ def time_predict():
     time_dict = {}
     for i in range(1):
         start = time.time()
-        chainring_params = (50, 34)
         store = cadence_reference()
         store = best_cadence(store)
         config = GearConfig(use_real=False, use_generated=True, max_rear=11, largest_rear=23 + i)
@@ -534,7 +583,7 @@ def time_predict():
 
 def main():
     """
-    Initialises config file available to all functions
+    Initialises config file available to all functions, calls functions to run program
     """
     # Starts run timer
     start = time.time()
@@ -543,23 +592,56 @@ def main():
     config = GearConfig(max_front=2,
                         max_rear=12,
                         smallest_rear=11,
-                        largest_rear=32,
+                        largest_rear=23,
                         smallest_front=40,
                         largest_front=54,
-                        chainring_teeth=(54,40),
                         use_real=False,
                         use_generated=True)
     # Creates instance of store and loads with quadratic params
     store = cadence_reference()
+
     # Adds peak cadence to store instance
     store = best_cadence(store)
+
     # Checks if score has a cache and runs it if not (can force to run)
     get_data(config,store,"quarters",force_recompute=False)
+
+    # Predicts time taken to run large datasets
+    time_predict()
+
     # Finds best gears based on measures
     best_finder(config,store,pattern="quarters")
 
-    # Plots data using matplotlib
+    # # Plots data using matplotlib
     # results_plotter_matplotlib(get_data(config,store,"quarters"))
+
+    # Plots ratios across patterned gearset
+    graph_shifts(config,pattern="quarters")
+
+    # Stops run timer and finds duration
+    end = time.time()
+    duration = end - start
+    print(f"Duration (s): {duration}")
+
+def original_plotting():
+    """
+    Performs analysis on real gearsets as spreadsheets did
+    """
+    # Starts run timer
+    start = time.time()
+    print(f"Start time: {start}")
+    # Creates instance with config values
+    config = GearConfig(max_front=2,
+                        max_rear=12,
+                        smallest_rear=11,
+                        largest_rear=23,
+                        smallest_front=40,
+                        largest_front=54,
+                        use_real=True,
+                        use_generated=False)
+    
+    # Plots ratios across patterned gearset
+    graph_shifts(config,pattern="ideal")
 
     # Stops run timer and finds duration
     end = time.time()
@@ -568,6 +650,6 @@ def main():
 
 if __name__ == "__main__":
     print("Running main")
-    main()
-
+    # main()
+    original_plotting()
     # unique_sprockets()
