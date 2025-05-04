@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from scipy.optimize import curve_fit
+from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 from itertools import combinations
 import csv
@@ -20,9 +21,8 @@ def csv_2_dataframe(csv_file):
         Dataframe with gear ratios calculated
     """
     read_csv = pd.read_csv(csv_file)
-    # print(read_csv.to_string())
     read_rear_string = read_csv.head()
-    # print("csv_2_dataframe done")
+    print("csv_2_dataframe done")
     return read_csv
 
 def sprocket_generator(config: GearConfig):
@@ -81,6 +81,7 @@ def gearset_generator(config: GearConfig):
                     "FrontTeeth": front_teeth
                 })
     generated_gearsets = pd.DataFrame(data)
+    # print(generated_gearsets.head)
     print("gearset_generator done")
     return(generated_gearsets)
 
@@ -98,7 +99,7 @@ def calculate_ratios(config: GearConfig):
     flat_front = read_front.melt(var_name="Chainring", value_name="FrontTeeth")
     real_gear_combinations = flat_rear.merge(flat_front, how="cross")
 
-    # Makes generated flat dataframe
+    # Loads generated flat dataframe
     generated_gearsets = gearset_generator(config)
 
     if config.use_real and config.use_generated:
@@ -379,7 +380,8 @@ def cadence_reference():
     cadence_data = csv_2_dataframe("cadence_vs_efficiency.csv")
     cadence = cadence_data["Cadence"]
     efficiency = cadence_data["Gross Efficiency"]
-    plt.plot(cadence,efficiency,"o")
+    plt.figure(figsize=(10, 6))
+    plt.plot(cadence,efficiency,"o",label="Data(check)")
 
     # Interpolate cadence to make fitted curve smoother on graph
     cad_range = max(cadence) - min(cadence)
@@ -393,12 +395,25 @@ def cadence_reference():
     fit_A = parameters[0]
     fit_B = parameters[1]
     fit_C = parameters[2]
+    stnd_dev_err = np.sqrt(np.diag(covarience))
+    print(f"Coefficients: {parameters}")
+    print(f"1 Standard Dev curve_fit error: {stnd_dev_err}")
+
+    # Stores coefficients for future calculations
     store = VarStore(fit_A = fit_A, fit_B = fit_B, fit_C = fit_C)
 
+    J = np.vstack([high_res_cadence**2,high_res_cadence,np.ones_like(high_res_cadence)]).T
+    y_fit = quadratic(high_res_cadence, *parameters)
+    y_err = np.sqrt(np.sum((J @ covarience) * J, axis=1))  # 1-sigma error
+
+    plt.plot(high_res_cadence, y_fit, "-", label="Fitted Curve")
+    plt.fill_between(high_res_cadence, y_fit - y_err, y_fit + y_err, color='gray', alpha=0.3, label="±1σ Confidence Band")
+
+
     # Plots fitted quadratic curve on same axis as datapoints and saves png to file
-    # fit_efficiency = quadratic(high_res_cadence, fit_A, fit_B, fit_C)
-    # plt.plot(high_res_cadence, fit_efficiency, "-")
-    # plt.savefig("plot.png")
+    fit_efficiency = quadratic(high_res_cadence, fit_A, fit_B, fit_C)
+    plt.plot(high_res_cadence, fit_efficiency, "-")
+    plt.savefig("plot.png")
 
     # print("cadence_reference done")
     return(store)
@@ -671,7 +686,7 @@ def main():
     config = GearConfig(max_front=2,
                         max_rear=12,
                         smallest_rear=11,
-                        largest_rear=30,
+                        largest_rear=24,
                         smallest_front=40,
                         largest_front=54,
                         use_real=False,
