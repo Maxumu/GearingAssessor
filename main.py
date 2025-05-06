@@ -376,19 +376,14 @@ def cadence_reference():
         Fits curve and exports png to file
         Returns efficiency for given cadence
     """
-    # Inputs data from csv file and plots on axis
+    # Inputs data from csv file
     cadence_data = csv_2_dataframe("cadence_vs_efficiency.csv")
     cadence = cadence_data["Cadence"]
     efficiency = cadence_data["Gross Efficiency"]
-    plt.figure(figsize=(10, 6))
-    plt.plot(cadence,efficiency,"o",label="Data(check)")
 
     # Interpolate cadence to make fitted curve smoother on graph
     cad_range = max(cadence) - min(cadence)
-    high_res_cadence = []
-    for i in range(21):
-        high_res_cadence.append(min(cadence)+((i/20)*cad_range))
-    high_res_cadence = pd.Series(high_res_cadence)
+    high_res_cadence = np.linspace(min(cadence),max(cadence),200)
 
     # Uses curve_fit to fit quadratic function as defined to the cadence and efficiency
     parameters,covarience = curve_fit(quadratic,cadence,efficiency)
@@ -402,18 +397,37 @@ def cadence_reference():
     # Stores coefficients for future calculations
     store = VarStore(fit_A = fit_A, fit_B = fit_B, fit_C = fit_C)
 
-    J = np.vstack([high_res_cadence**2,high_res_cadence,np.ones_like(high_res_cadence)]).T
-    y_fit = quadratic(high_res_cadence, *parameters)
-    y_err = np.sqrt(np.sum((J @ covarience) * J, axis=1))  # 1-sigma error
+    # # NEED TO LOOK AT THIS SECTION. THIS COMPUTES POSSIBLY THE SAME THING AS STND_DEV_ERR ABOVE
+    # J = np.vstack([high_res_cadence**2,high_res_cadence,np.ones_like(high_res_cadence)]).T
+    # y_fit = quadratic(high_res_cadence, *parameters)
+    # y_err = np.sqrt(np.sum((J @ covarience) * J, axis=1))  # 1-sigma error
 
-    plt.plot(high_res_cadence, y_fit, "-", label="Fitted Curve")
-    plt.fill_between(high_res_cadence, y_fit - y_err, y_fit + y_err, color='gray', alpha=0.3, label="±1σ Confidence Band")
+    # plt.plot(high_res_cadence, y_fit, "-", label="Fitted Curve")
+    # plt.fill_between(high_res_cadence, y_fit - y_err, y_fit + y_err, color='gray', alpha=0.3, label="±1σ Confidence Band")
 
+    # Calculates residuals and rmse
+    fit_efficiency = quadratic(cadence,*parameters)
+    residuals = efficiency - fit_efficiency
+    rmse = np.sqrt(mean_squared_error(efficiency, fit_efficiency))
+
+    # Plot residuals
+    plt.figure(figsize=(10, 4))
+    plt.axhline(0, color='gray', linestyle='--')
+    plt.plot(cadence, residuals, 'o-', label='Residuals')
+    plt.xlabel("Cadence")
+    plt.ylabel("Residual (Actual - Fit)")
+    plt.title("Residuals Plot")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig("residuals_plot.png")
 
     # Plots fitted quadratic curve on same axis as datapoints and saves png to file
-    fit_efficiency = quadratic(high_res_cadence, fit_A, fit_B, fit_C)
-    plt.plot(high_res_cadence, fit_efficiency, "-")
-    plt.savefig("plot.png")
+    high_res_efficiency = quadratic(high_res_cadence, fit_A, fit_B, fit_C)
+    plt.figure(figsize=(10, 6))
+    plt.plot(high_res_cadence, high_res_efficiency, "-")
+    plt.plot(cadence, efficiency, "o", label="Data(check)")
+    plt.plot()
+    plt.savefig("Cadence_efficiency.png")
 
     # print("cadence_reference done")
     return(store)
