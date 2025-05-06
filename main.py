@@ -279,9 +279,9 @@ def calculate_jumps(config: GearConfig, pattern):
     os.makedirs(output_dir, exist_ok=True)
     for file in glob.glob(os.path.join(output_dir, "*.parquet")):
         os.remove(file)
-    
-    start_parq = time.time()
-    print(f"starting writing drivetrains to parquet folder: {start_parq}")
+
+    # start_parq = time.time()
+    # print(f"starting writing drivetrains to parquet folder: {start_parq}")
     
     # for key, df in drivetrains.items():
     #     filename = os.path.join(output_dir, f"{key.replace(' ', '_').replace('/', '-')}.parquet")
@@ -294,9 +294,9 @@ def calculate_jumps(config: GearConfig, pattern):
 
     combined_df.to_parquet("drivetrains_combined.parquet", index=False)
 
-    end_parq = time.time()
-    duration_parq = end_parq - start_parq
-    print(f"Duration (s): {duration_parq}")
+    # end_parq = time.time()
+    # duration_parq = end_parq - start_parq
+    # print(f"Duration (s): {duration_parq}")
 
     print("calculate_jumps done")
     return(drivetrains)
@@ -393,6 +393,7 @@ def cadence_reference():
     stnd_dev_err = np.sqrt(np.diag(covarience))
     print(f"Coefficients: {parameters}")
     print(f"1 Standard Dev curve_fit error: {stnd_dev_err}")
+    print(covarience)
 
     # Stores coefficients for future calculations
     store = VarStore(fit_A = fit_A, fit_B = fit_B, fit_C = fit_C)
@@ -409,6 +410,7 @@ def cadence_reference():
     fit_efficiency = quadratic(cadence,*parameters)
     residuals = efficiency - fit_efficiency
     rmse = np.sqrt(mean_squared_error(efficiency, fit_efficiency))
+    print(f"RMSE: {rmse}")
 
     # Plot residuals
     plt.figure(figsize=(10, 4))
