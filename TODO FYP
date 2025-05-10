@@ -15,6 +15,7 @@ Writing:
 	- Overall discussion TODO
 	- Conclusions and future work TODO
 	- Project management TODO
+	- Extend lit review TODO
 	- Self review TODO
 	- Abstract TODO
 	- Introduction TODO
@@ -28,35 +29,54 @@ Writing:
 	- Application of shifting pattern COMPLETE
 	- Analysis COMPLETE
 	- Scoring Gearsets COMPLETE
-	- Parametric cad justification TODO
-	- Parametric CAD description TODO
+	- Parametric cad justification COMPLETE
+	- Parametric CAD description COMPLETE
+	- Overall discussion TODO
 
-	
-	Aggregate discussion points into docs TODO
+	Aggregate discussion points into docs COMPLETE
 	
 	Read through interim sections and edit TODO
 	- Background and Motivations COMPLETE
 	- Aims and Objectives COMPLETE
 	- Literature review TODO
 	- Initial spreadsheet approach COMPLETE
+	
+	Format figures:
+	- Python flowchart TODO
+	- Quadratic vs efficiency curve TODO
+	- Shifting pattern spreadsheet TODO
+	- Shifting patterns for top gearsets TODO
+	- Case study all shifts diagram TODO
+	- Optimisation waterfall chart TODO
+	- average efficiency vs worst efficiency for a few hundred gearsets TODO
+	- Parametric design COMPLETE
+	- Resultant sprockets COMPLETE
 
 Technical:
 	Add 11,12,13 to gearset generator TODO
 	Run overnight full-scale calcs TODO
 	Set up large scale fast plotting TODO
+	Generate whole cassete model NICE TO HAVE
 	
 TODO 8/05/25
 
 Writing:
-	Move into overleaf TODO
-	- Intial spreadsheet approach COMPLETE
-	- Cadence and efficiency reference COMPLETE
-	- Gearset generation COMPLETE
-	- Application of shifting pattern COMPLETE
-	- Analysis COMPLETE
-	- Scoring Gearsets COMPLETE
-	- Parametric cad justification TODO
-	- Parametric CAD description TODO
+	Complete docs version for:
+	- Optimisation and GitHub TODO
+	- Overall discussion TODO
+	- Conclusions and future work TODO
+	
+	Read through interim sections and edit TODO
+	- Literature review TODO
+
+Formatting:
+	Format figures:
+	- Python flowchart TODO
+	- Quadratic vs efficiency curve TODO
+	- Shifting pattern spreadsheet TODO
+	- Shifting patterns for top gearsets TODO
+	- Case study all shifts diagram TODO
+	- Optimisation waterfall chart TODO
 	
 Technical:
 	Add 11,12,13 to gearset generator TODO
