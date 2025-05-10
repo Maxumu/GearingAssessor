@@ -42,25 +42,42 @@ def sprocket_generator(config: GearConfig):
     Limits on number of teeth:
         Smallest rear sprocket = 11
         Largest rear sprocket = 36
-        Smallest front chainring = 34
-        Largest front chainring = 50
+        Smallest front chainring = 40
+        Largest front chainring = 54
     Cassette structure:
-        Cassete must be in ascending order of size with no duplicates
+        Cassette must be in ascending order of size with no duplicates
         Chainring must be in decending order of size with no duplicates
         Rear sprocket number = 12
         Front chainring number = 2
     """
     # Imports arguments from config file
-    possible_sprockets = list(range(config.smallest_rear, config.largest_rear + 1))
-    cassette_combinations = list(combinations(possible_sprockets, config.max_rear))
+
+    # Define locked size sprockets
+    bottom_locked = []
+    bottom_locked = [
+        config.smallest_rear,
+        config.smallest_rear + 1,
+        config.smallest_rear + 2
+    ]
+    top_locked = config.largest_rear
+
+    # Check enough free slots
+    num_free = config.max_rear - (len(bottom_locked) + 1)
+    if num_free < 0:
+        raise ValueError("max_rear must be at least 4 to accommodate 3 bottom + 1 top.")
+
+    # Candidates for the “middle” sprockets run from just above bottom_locked up to below top_locked
+    middle_candidates = range(bottom_locked[-1] + 1, top_locked)
+    middle_combos = combinations(middle_candidates, num_free)
 
     # Generates options for rear sprockets
     cassette_options = {}
-    for cassette in cassette_combinations:
+    for combo in middle_combos:
+        cassette = tuple(bottom_locked) + tuple(combo) + (top_locked,)
         key = "-".join(map(str, cassette))
         cassette_options[key] = cassette
     global number_generated
-    number_generated = len(cassette_combinations)
+    number_generated = len(cassette_options)
     print(f"sprocket_generator done, generated: {number_generated}")
 
     return(cassette_options)
@@ -708,11 +725,11 @@ def main():
     config = GearConfig(max_front=2,
                         max_rear=12,
                         smallest_rear=11,
-                        largest_rear=24,
+                        largest_rear=36,
                         smallest_front=40,
                         largest_front=54,
-                        use_real=True,
-                        use_generated=False)
+                        use_real=False,
+                        use_generated=True)
     # Creates instance of store and loads with quadratic params
     store = cadence_reference()
 
@@ -725,11 +742,11 @@ def main():
     # # Predicts time taken to run large datasets
     # time_predict()
 
-    # Finds best gears based on measures
-    best_finder(config,store,pattern="quarters")
+    # # Finds best gears based on measures
+    # best_finder(config,store,pattern="quarters")
 
-    # Chooses which gearsets to graph ratio shifts on
-    what_to_plot("all_analysed")
+    # # Chooses which gearsets to graph ratio shifts on
+    # what_to_plot("top_gearsets")
 
     # # Plots data using matplotlib
     # results_plotter_matplotlib(get_data(config,store,"quarters"))

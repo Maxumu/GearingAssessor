@@ -41,29 +41,43 @@ Writing:
 	- Literature review TODO
 	- Initial spreadsheet approach COMPLETE
 	
-	Format figures:
-	- Python flowchart TODO
-	- Quadratic vs efficiency curve TODO
-	- Shifting pattern spreadsheet TODO
+Make figures:
+	Python script outputs:
+	- Existing gearsets shifting pattern ideal COMPLETE
+	- Existing gearsets shifting pattern quarters COMPLETE
+	____________ halves shifting pattern change________
+	- Existing gearsets shifting pattern halves NICE TO HAVE
+	- Quadratic vs efficiency curve COMPLETE
+	____________ 11,12,13 change _______________
 	- Shifting patterns for top gearsets TODO
+	- Better optimisation waterfall chart
+	- Average efficiency vs worst efficiency for a few hundred gearsets TODO
+	
+	Other:
+	- Original optimisation waterfall chart TODO
 	- Case study all shifts diagram TODO
-	- Optimisation waterfall chart TODO
-	- average efficiency vs worst efficiency for a few hundred gearsets TODO
+	- Shifting pattern spreadsheet TODO
+	- Python flowchart TODO
 	- Parametric design COMPLETE
 	- Resultant sprockets COMPLETE
 
 Technical:
-	Add 11,12,13 to gearset generator TODO
+	Add 11,12,13 to gearset generator COMPLETE
 	Run overnight full-scale calcs TODO
 	Set up large scale fast plotting TODO
-	Generate whole cassete model NICE TO HAVE
+	Generate whole cassette model NICE TO HAVE
 	
-TODO 8/05/25
+TODO 10/05/25
 
 Writing:
 	Complete docs version for:
 	- Optimisation and GitHub TODO
-	- Overall discussion TODO
+	- Overall results and discussion TODO
+		- Results to present TODO
+		- Results discussion TODO
+		- Limitations COMPLETE
+		- Eff/Cad curve COMPLETE
+		- Cassette mechanical considerations TODO
 	- Conclusions and future work TODO
 	
 	Read through interim sections and edit TODO
