@@ -12,7 +12,12 @@ Writing:
 	- Cadence and eff technical procedure COMPLETE
 	- Spreadsheet approach motivations COMPLETE
 	- Optimisation and GitHub TODO
-	- Overall discussion TODO
+	- Overall results and discussion TODO
+		- Results to present TODO
+		- Results discussion TODO
+		- Limitations COMPLETE
+		- Eff/Cad curve COMPLETE
+		- Cassette mechanical considerations TODO
 	- Conclusions and future work TODO
 	- Project management TODO
 	- Extend lit review TODO
@@ -94,4 +99,22 @@ Formatting:
 	
 Technical:
 	Add 11,12,13 to gearset generator TODO
-	
+
+
+EOD FINDINGS:
+
+Ceramicspeed 2015 analysis quantifies losses due to cross chaining.
+
+It might be possible therefore, to calculate whether the losses due to my reduced divergence from optimal cadence, are greater or lesser than the losses due to cross chaining.
+
+Probably this now falls under future work. Could potentially just quote the research and talk about how it shows cross chaining is an issue, and future work would be to equate the two.
+
+Additionally it defines what it believes is the optimal shifting pattern, so I could in theory use this as the 'one to beat' based on my analysis. One to do if I have time, and if I don't, one to talk about in future work.
+
+Big Tasks remaining before draft submission
+- Remake all graphs for shifting pattern to include ideal curve
+- Write analysis of my results
+- Get flowchart into report
+- Conclusions
+- Extend literature review (this is the big unknown)
+- Finish writing fluff sections

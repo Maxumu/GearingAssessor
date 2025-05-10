@@ -347,7 +347,7 @@ def graph_shifts(gearsets_to_plot):
         df['GearCombo'] = df['RearIndex'].astype(str) + "_" + df['FrontIndex'].astype(str)
 
         plt.figure(figsize=(12, 6))
-        plt.scatter(df['GearCombo'], df['GearRatio'], color='black',zorder=2)
+        plt.scatter(df['GearCombo'], df['GearRatio'], color='black',zorder=3)
         # Draw colored lines between gear shifts
         for i in range(len(df) - 1):
             x1, x2 = df['GearCombo'].iloc[i], df['GearCombo'].iloc[i + 1]
@@ -362,7 +362,16 @@ def graph_shifts(gearsets_to_plot):
             else:
                 color = 'red'   # Both shifted
 
-            plt.plot([x1, x2], [y1, y2], color=color, linewidth=2, zorder=1)
+            plt.plot([x1, x2], [y1, y2], color=color, linewidth=2, zorder=2)
+
+        # # Adding ideal shifts reference line
+        G_high = df['GearRatio'].max()
+        G_low = df['GearRatio'].min()
+
+        R_T = G_high / G_low
+        R_ideal = R_T**(1 / (len(df) - 1))
+        ideal_ratios = [G_low * (R_ideal ** i) for i in range(len(df))]
+        plt.plot(range(len(df)), ideal_ratios,color="lightgrey",label='Ideal Gear Ratios (6.77% jumps)', marker='o',zorder=1)
 
         plt.xticks(rotation=90)  # Rotate x-axis labels for readability
         plt.xlabel('Gear Combination')
@@ -375,7 +384,8 @@ def graph_shifts(gearsets_to_plot):
         legend_elements = [
             Line2D([0], [0], color='blue', lw=2, label='Rear shift'),
             Line2D([0], [0], color='yellow', lw=2, label='Front shift'),
-            Line2D([0], [0], color='red', lw=2, label='Both shifted')
+            Line2D([0], [0], color='red', lw=2, label='Both shifted'),
+            Line2D([0], [0], color='lightgrey', lw=2, label='Ideal shift')
         ]
         plt.legend(handles=legend_elements, title="Shift Type")
 
@@ -737,16 +747,16 @@ def main():
     store = best_cadence(store)
 
     # Checks if score has a cache and runs it if not (can force to run)
-    get_data(config,store,"quarters",force_recompute=True)
+    get_data(config,store,"quarters",force_recompute=False)
 
     # # Predicts time taken to run large datasets
     # time_predict()
 
-    # # Finds best gears based on measures
-    # best_finder(config,store,pattern="quarters")
+    # Finds best gears based on measures
+    best_finder(config,store,pattern="quarters")
 
     # # Chooses which gearsets to graph ratio shifts on
-    # what_to_plot("top_gearsets")
+    what_to_plot("top_gearsets")
 
     # # Plots data using matplotlib
     # results_plotter_matplotlib(get_data(config,store,"quarters"))
