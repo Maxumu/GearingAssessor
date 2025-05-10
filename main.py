@@ -3,6 +3,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from itertools import combinations
 import csv
 import time
@@ -279,9 +280,9 @@ def calculate_jumps(config: GearConfig, pattern):
     os.makedirs(output_dir, exist_ok=True)
     for file in glob.glob(os.path.join(output_dir, "*.parquet")):
         os.remove(file)
-
-    # start_parq = time.time()
-    # print(f"starting writing drivetrains to parquet folder: {start_parq}")
+    
+    start_parq = time.time()
+    print(f"starting writing drivetrains to parquet folder: {start_parq}")
     
     # for key, df in drivetrains.items():
     #     filename = os.path.join(output_dir, f"{key.replace(' ', '_').replace('/', '-')}.parquet")
@@ -294,9 +295,9 @@ def calculate_jumps(config: GearConfig, pattern):
 
     combined_df.to_parquet("drivetrains_combined.parquet", index=False)
 
-    # end_parq = time.time()
-    # duration_parq = end_parq - start_parq
-    # print(f"Duration (s): {duration_parq}")
+    end_parq = time.time()
+    duration_parq = end_parq - start_parq
+    print(f"Duration (s): {duration_parq}")
 
     print("calculate_jumps done")
     return(drivetrains)
@@ -315,8 +316,6 @@ def graph_shifts(gearsets_to_plot):
         os.remove(file)
 
     for name, df in gearsets.items():
-        # Making x axis labels
-
         # Map FrontTeeth to ascending index (smallest = 1, etc.)
         front_order = {v: i+1 for i, v in enumerate(sorted(df['FrontTeeth'].unique()))}
 
@@ -331,7 +330,7 @@ def graph_shifts(gearsets_to_plot):
         df['GearCombo'] = df['RearIndex'].astype(str) + "_" + df['FrontIndex'].astype(str)
 
         plt.figure(figsize=(12, 6))
-        plt.scatter(df['GearCombo'], df['GearRatio'], color='blue')
+        plt.scatter(df['GearCombo'], df['GearRatio'], color='black',zorder=2)
         # Draw colored lines between gear shifts
         for i in range(len(df) - 1):
             x1, x2 = df['GearCombo'].iloc[i], df['GearCombo'].iloc[i + 1]
@@ -349,11 +348,19 @@ def graph_shifts(gearsets_to_plot):
             plt.plot([x1, x2], [y1, y2], color=color, linewidth=2, zorder=1)
 
         plt.xticks(rotation=90)  # Rotate x-axis labels for readability
-        plt.xlabel('Gear Combo')
+        plt.xlabel('Gear Combination')
         plt.ylabel('Gear Ratio')
-        plt.title('Gear Ratios by Gear Combo')
+        plt.title(f"Shifting Pattern Gear Ratios by Gear Combination {name}")
         plt.grid(True)
         plt.tight_layout()
+        
+        # Add legend for color meanings
+        legend_elements = [
+            Line2D([0], [0], color='blue', lw=2, label='Rear shift'),
+            Line2D([0], [0], color='yellow', lw=2, label='Front shift'),
+            Line2D([0], [0], color='red', lw=2, label='Both shifted')
+        ]
+        plt.legend(handles=legend_elements, title="Shift Type")
 
         plt.savefig(f"{output_dir}/{name}_gear_ratio.png")
         plt.close()
@@ -376,14 +383,19 @@ def cadence_reference():
         Fits curve and exports png to file
         Returns efficiency for given cadence
     """
-    # Inputs data from csv file
+    # Inputs data from csv file and plots on axis
     cadence_data = csv_2_dataframe("cadence_vs_efficiency.csv")
     cadence = cadence_data["Cadence"]
     efficiency = cadence_data["Gross Efficiency"]
+    # plt.figure(figsize=(10, 6))
+    # plt.plot(cadence,efficiency,"o",label="Data(check)")
 
     # Interpolate cadence to make fitted curve smoother on graph
     cad_range = max(cadence) - min(cadence)
-    high_res_cadence = np.linspace(min(cadence),max(cadence),200)
+    high_res_cadence = []
+    for i in range(21):
+        high_res_cadence.append(min(cadence)+((i/20)*cad_range))
+    high_res_cadence = pd.Series(high_res_cadence)
 
     # Uses curve_fit to fit quadratic function as defined to the cadence and efficiency
     parameters,covarience = curve_fit(quadratic,cadence,efficiency)
@@ -393,44 +405,41 @@ def cadence_reference():
     stnd_dev_err = np.sqrt(np.diag(covarience))
     print(f"Coefficients: {parameters}")
     print(f"1 Standard Dev curve_fit error: {stnd_dev_err}")
-    print(covarience)
 
     # Stores coefficients for future calculations
     store = VarStore(fit_A = fit_A, fit_B = fit_B, fit_C = fit_C)
 
-    # # NEED TO LOOK AT THIS SECTION. THIS COMPUTES POSSIBLY THE SAME THING AS STND_DEV_ERR ABOVE
-    # J = np.vstack([high_res_cadence**2,high_res_cadence,np.ones_like(high_res_cadence)]).T
-    # y_fit = quadratic(high_res_cadence, *parameters)
-    # y_err = np.sqrt(np.sum((J @ covarience) * J, axis=1))  # 1-sigma error
+    J = np.vstack([high_res_cadence**2,high_res_cadence,np.ones_like(high_res_cadence)]).T
+    y_fit = quadratic(high_res_cadence, *parameters)
+    y_err = np.sqrt(np.sum((J @ covarience) * J, axis=1))  # 1-sigma error
 
     # plt.plot(high_res_cadence, y_fit, "-", label="Fitted Curve")
     # plt.fill_between(high_res_cadence, y_fit - y_err, y_fit + y_err, color='gray', alpha=0.3, label="±1σ Confidence Band")
 
-    # Calculates residuals and rmse
-    fit_efficiency = quadratic(cadence,*parameters)
-    residuals = efficiency - fit_efficiency
-    rmse = np.sqrt(mean_squared_error(efficiency, fit_efficiency))
-    print(f"RMSE: {rmse}")
 
-    # Plot residuals
-    plt.figure(figsize=(10, 4))
-    plt.axhline(0, color='gray', linestyle='--')
-    plt.plot(cadence, residuals, 'o-', label='Residuals')
-    plt.xlabel("Cadence")
-    plt.ylabel("Residual (Actual - Fit)")
-    plt.title("Residuals Plot")
-    plt.legend()
-    plt.grid(True)
-    plt.savefig("residuals_plot.png")
+    # # Plots fitted quadratic curve on same axis as datapoints and saves png to file
+    # fit_efficiency = quadratic(high_res_cadence, fit_A, fit_B, fit_C)
+    # plt.plot(high_res_cadence, fit_efficiency, "-")
+    # plt.savefig("plot.png")
 
-    # Plots fitted quadratic curve on same axis as datapoints and saves png to file
-    high_res_efficiency = quadratic(high_res_cadence, fit_A, fit_B, fit_C)
+    # Format equation for legend
+    equation_label = (f"Fitted Curve: "f"$y = {fit_A:.4f}x^2 + {fit_B:.4f}x + {fit_C:.4f}$")
+
+       # Plotting
     plt.figure(figsize=(10, 6))
-    plt.plot(high_res_cadence, high_res_efficiency, "-")
-    plt.plot(cadence, efficiency, "o", label="Data(check)")
-    plt.plot()
-    plt.savefig("Cadence_efficiency.png")
+    plt.plot(cadence, efficiency, "o", label="Measured Data", color="black")
+    plt.plot(high_res_cadence, y_fit, "-", label=equation_label, color="green")
 
+    # Labels and grid
+    plt.xlabel("Cadence (RPM)")
+    plt.ylabel("Gross Efficiency (%)")
+    plt.title("Cadence vs Gross Efficiency")
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.legend(title="Legend", loc='best')
+    plt.tight_layout()
+
+    # Save and/or show
+    plt.savefig("cadence_efficiency_plot.png")
     # print("cadence_reference done")
     return(store)
 
@@ -660,17 +669,6 @@ def top_gearsets():
     # Reads in top gearsets parquet
     top_of_top = pd.read_parquet("top_of_top.parquet")
 
-    # Reads in drivetrains folder of parquet to dict
-    # directory = 'parquet_drivetrains'
-
-    # all_drivetrains = {}
-    # for filename in os.listdir(directory):
-    #     if filename.endswith(".parquet"):
-    #         key = os.path.splitext(filename)[0]#.replace('_', ' ').replace('-', '/')
-    #         filepath = os.path.join(directory, filename)
-    #         df = pd.read_parquet(filepath)
-    #         all_drivetrains[key] = df
-
     all_drivetrains = pd.read_parquet("drivetrains_combined.parquet")
     all_drivetrains_df = {name: group.drop(columns="dataset_name") for name, group in all_drivetrains.groupby("dataset_name")}
 
@@ -713,8 +711,8 @@ def main():
                         largest_rear=24,
                         smallest_front=40,
                         largest_front=54,
-                        use_real=False,
-                        use_generated=True)
+                        use_real=True,
+                        use_generated=False)
     # Creates instance of store and loads with quadratic params
     store = cadence_reference()
 
@@ -731,7 +729,7 @@ def main():
     best_finder(config,store,pattern="quarters")
 
     # Chooses which gearsets to graph ratio shifts on
-    what_to_plot("top_gearsets")
+    what_to_plot("all_analysed")
 
     # # Plots data using matplotlib
     # results_plotter_matplotlib(get_data(config,store,"quarters"))
