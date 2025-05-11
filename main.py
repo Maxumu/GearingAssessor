@@ -430,8 +430,8 @@ def cadence_reference():
     fit_B = parameters[1]
     fit_C = parameters[2]
     stnd_dev_err = np.sqrt(np.diag(covarience))
-    print(f"Coefficients: {parameters}")
-    print(f"1 Standard Dev curve_fit error: {stnd_dev_err}")
+    # print(f"Coefficients: {parameters}")
+    # print(f"1 Standard Dev curve_fit error: {stnd_dev_err}")
 
     # Stores coefficients for future calculations
     store = VarStore(fit_A = fit_A, fit_B = fit_B, fit_C = fit_C)
@@ -540,44 +540,51 @@ def score(config: GearConfig,store: VarStore,pattern):
         # Calculates worst gear changes
         biggest_jump = np.nanmax(df[["Jump_up","Jump_down"]].to_numpy())
         smallest_jump = np.nanmin(df[["Jump_up","Jump_down"]].to_numpy())
-        worst_jump_diff_big = biggest_jump - optimal_jump
-        worst_jump_diff_small = smallest_jump - optimal_jump
+        worst_jump_diff_big = biggest_jump - optimal_jump 
+        worst_jump_diff_small = optimal_jump - smallest_jump # changed this so that it is a positive value 
         worst_jump_diff = max(worst_jump_diff_small,worst_jump_diff_big)
 
         # Finds proportional difference from optimal cadence, applies it to efficiency func for worst efficiency shift
         worst_effective_cadence = (worst_jump_diff / optimal_jump) * store.peak_cadence
         worst_efficiency = efficiency(worst_effective_cadence,store)
-        worst_efficiency_formatted = abs(worst_efficiency-1)
+        worst_efficiency_formatted = 1-worst_efficiency
 
         # Calculates average jump across whole groupset, compares to optimal, applies efficiency function
-        average_jump = df["Jump_avg"].mean()
-        avg_to_opt = abs(average_jump - optimal_jump)
-        avg_to_opt_proportional = avg_to_opt / optimal_jump
-        avg_effective_cadence = avg_to_opt_proportional * store.peak_cadence
-        avg_efficiency = efficiency(avg_effective_cadence,store)
-        avg_efficiency_formatted = abs(avg_efficiency-1)
+        df["up_differences_from_opt"] = df["Jump_up"]/optimal_jump
+        rms_diff = np.sqrt(np.mean((df["up_differences_from_opt"])**2))
+        rms_effective_cadence = rms_diff * store.peak_cadence
+        rms_eff = efficiency(rms_effective_cadence,store)
+
+        # average_jump = df["Jump_avg"].mean()
+        # avg_to_opt = abs(average_jump - optimal_jump)
+        # avg_to_opt_proportional = avg_to_opt / optimal_jump
+        # avg_effective_cadence = avg_to_opt_proportional * store.peak_cadence
+        # avg_efficiency = efficiency(avg_effective_cadence,store)
+        # avg_efficiency_formatted = 1-avg_efficiency
     
         # Calculates number of front shifts
         front_changes = (df["FrontTeeth"] != df["FrontTeeth"].shift()).sum() -1
 
         # Calculates single combo_score from all measures
-        combo_score = worst_efficiency_formatted + avg_efficiency_formatted + front_changes
+        combo_score = worst_efficiency_formatted + rms_eff + front_changes
 
         all_scores.append({
             "Groupset": key,
             "Range": range,
             "Optimal Jump": optimal_jump,
             "Worst Effective Cadence": worst_effective_cadence,
-            "Average Effective Cadence": avg_effective_cadence,
+            "RMS diff": rms_diff,
+            "RMS eff": rms_eff,
+            # "Average Effective Cadence": avg_effective_cadence,
             # "Worst Diff to Optimal": worst_jump_diff,
             # "Avg Diff to Optimal": avg_to_opt,
             # "Average jump": average_jump,
             "Worst Efficiency": worst_efficiency,
             # "Biggest Jump": biggest_jump,
             # "Smallest Jump": smallest_jump,
-            "Average Efficiency": avg_efficiency,
+            # "Average Efficiency": avg_efficiency,
             "Worst Efficiency Formatted": worst_efficiency_formatted,
-            "Average Efficiency Formatted": avg_efficiency_formatted,
+            # "Average Efficiency Formatted": avg_efficiency_formatted,
             "Front Shifts": front_changes,
             "Combo Score": combo_score
         })
@@ -747,7 +754,7 @@ def main():
     store = best_cadence(store)
 
     # Checks if score has a cache and runs it if not (can force to run)
-    get_data(config,store,"quarters",force_recompute=False)
+    get_data(config,store,"quarters",force_recompute=True)
 
     # # Predicts time taken to run large datasets
     # time_predict()
