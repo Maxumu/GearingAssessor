@@ -213,10 +213,69 @@ def shifting_pattern(config: GearConfig, pattern):
     for key,drivetrain in drivetrains.items():
         if pattern == "ideal":
             drivetrains[key] = drivetrain.sort_values(by=("GearRatio"),ascending=[True])
-        elif pattern == "halves":
-            drivetrains[key] = drivetrain.sort_values(by=["FrontTeeth","RearTeeth"],ascending=[True, False])
+    
+def shifting_pattern(config: GearConfig, pattern):
+    """Sorts the gears into a shifting pattern based on the selected input
+
+    Input:
+        Which pattern to use (Ideal,Halves,Quarters)
+    Output:
+        Gear combinations flat dataframe
+        """
+
+    drivetrains = drivetrain_splitter(config)
+
+    # Chooses the pattern to sort the dataframe
+    for key,drivetrain in drivetrains.items():
+        if pattern == "ideal":
+            drivetrains[key] = drivetrain.sort_values(by=("GearRatio"),ascending=[True])
+        elif pattern == "halves_all_combos":
+            drivetrain = drivetrain.sort_values(by=["FrontTeeth","RearTeeth"],ascending=[True, False])
+            drivetrains[key] = drivetrain
+        elif pattern == "halves_half_combos":
+            # Pre-sort the dataframe by front teeth (ascending) and rear teeth (descending)
+            drivetrain = drivetrain.sort_values(by=["FrontTeeth","RearTeeth"],ascending=[True, False])
+            
+            # Get unique front teeth values
+            front_teeth_values = drivetrain['FrontTeeth'].unique()
+            
+            # Initialize empty list to store dataframes for each half
+            half_dfs = []
+            
+            # For each front sprocket, create a separate dataframe
+            for front_teeth in front_teeth_values:
+                front_df = drivetrain[drivetrain['FrontTeeth'] == front_teeth]
+                
+                # Sort by rear teeth (descending) to ensure proper order
+                front_df = front_df.sort_values(by="RearTeeth", ascending=False)
+                
+                # Calculate how many rear sprockets to use for this front sprocket
+                rear_teeth_values = front_df['RearTeeth'].unique()
+                sprockets_per_front = len(rear_teeth_values) // len(front_teeth_values)
+                
+                # Handle remaining sprockets (distribute remainder starting from first front sprocket)
+                remainder_idx = list(front_teeth_values).index(front_teeth)
+                if remainder_idx < len(rear_teeth_values) % len(front_teeth_values):
+                    sprockets_per_front += 1
+                
+                # Select the appropriate rear sprockets for this front sprocket
+                start_idx = 0
+                for i in range(remainder_idx):
+                    extra = 1 if i < len(rear_teeth_values) % len(front_teeth_values) else 0
+                    start_idx += (len(rear_teeth_values) // len(front_teeth_values)) + extra
+                
+                end_idx = start_idx + sprockets_per_front
+                selected_rears = rear_teeth_values[start_idx:end_idx]
+                
+                # Add selected combinations to the result
+                selected_df = front_df[front_df['RearTeeth'].isin(selected_rears)]
+                half_dfs.append(selected_df)
+            
+            # Combine all half dataframes and ensure the final result is in ascending order
+            combined_df = pd.concat(half_dfs, ignore_index=True)
+            drivetrains[key] = combined_df.sort_values(by="GearRatio", ascending=True)
         elif pattern == "quarters":
-            # Pre sorts the dataframe into halves pattern to make simpler 2nd operation
+            # Pre sorts the dataframe into half pattern to make simpler 2nd operation
             drivetrain = drivetrain.sort_values(by=["FrontTeeth","RearTeeth"],ascending=[True, False])
             # drivetrain = drivetrains[key]
             combos = int(drivetrain.shape[0])
@@ -642,7 +701,7 @@ def best_finder(config: GearConfig, store: VarStore, pattern):
 def results_plotter_matplotlib(all_scores_df):
 
     plt.figure(figsize=(10, 10))
-    leader = 1
+    leader = 10
     for key, group in all_scores_df.groupby("Groupset"):
         # Extract the values for plotting
         x_value = group["Worst Efficiency"]
@@ -742,7 +801,7 @@ def main():
     config = GearConfig(max_front=2,
                         max_rear=12,
                         smallest_rear=11,
-                        largest_rear=36,
+                        largest_rear=23,
                         smallest_front=40,
                         largest_front=54,
                         use_real=False,
@@ -754,16 +813,18 @@ def main():
     store = best_cadence(store)
 
     # Checks if score has a cache and runs it if not (can force to run)
-    get_data(config,store,"quarters",force_recompute=False)
+    get_data(config,store,"halves_half_combos",force_recompute=True)
 
     # # Predicts time taken to run large datasets
     # time_predict()
 
     # Finds best gears based on measures
-    best_finder(config,store,pattern="quarters")
+    best_finder(config,store,pattern="halves_half_combos")
 
     # # Chooses which gearsets to graph ratio shifts on
     what_to_plot("top_gearsets")
+
+    # score(config,store,"halves")
 
     # # Plots data using matplotlib
     # results_plotter_matplotlib(get_data(config,store,"quarters"))
