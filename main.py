@@ -459,7 +459,7 @@ def cadence_reference():
 
     # Labels and grid
     plt.xlabel("Cadence (RPM)")
-    plt.ylabel("Gross Efficiency (%)")
+    plt.ylabel("Gross Efficiency")
     plt.title("Cadence vs Gross Efficiency")
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.legend(title="Legend", loc='best')
@@ -623,7 +623,7 @@ def best_finder(config: GearConfig, store: VarStore, pattern):
     # Defines how much of the score dataframe to hold in ram at once
     chunk_size = 500_000
     # Defines what proportion of the score dataframe I want to keep to plot
-    top_size = 10
+    top_size = 1
     # Goes through dataframe in chunks
     for start in range(0,len(all_scores_df),chunk_size):
         chunk = all_scores_df.iloc[start:start+chunk_size]
@@ -754,7 +754,7 @@ def main():
     store = best_cadence(store)
 
     # Checks if score has a cache and runs it if not (can force to run)
-    get_data(config,store,"quarters",force_recompute=True)
+    get_data(config,store,"quarters",force_recompute=False)
 
     # # Predicts time taken to run large datasets
     # time_predict()
