@@ -358,7 +358,7 @@ def calculate_jumps(config: GearConfig, pattern):
         os.remove(file)
     
     start_parq = time.time()
-    print(f"starting writing drivetrains to parquet folder: {start_parq}")
+    print(f"starting writing drivetrains to parquet: {start_parq}")
     
     # for key, df in drivetrains.items():
     #     filename = os.path.join(output_dir, f"{key.replace(' ', '_').replace('/', '-')}.parquet")
@@ -406,7 +406,8 @@ def graph_shifts(gearsets_to_plot):
         df['GearCombo'] = df['RearIndex'].astype(str) + "_" + df['FrontIndex'].astype(str)
 
         plt.figure(figsize=(12, 6))
-        plt.scatter(df['GearCombo'], df['GearRatio'], color='black',zorder=3)
+        plt.scatter(df['GearCombo'], df['GearRatio'], color='black', zorder=3)
+
         # Draw colored lines between gear shifts
         for i in range(len(df) - 1):
             x1, x2 = df['GearCombo'].iloc[i], df['GearCombo'].iloc[i + 1]
@@ -423,30 +424,32 @@ def graph_shifts(gearsets_to_plot):
 
             plt.plot([x1, x2], [y1, y2], color=color, linewidth=2, zorder=2)
 
-        # # Adding ideal shifts reference line
+        # Ideal gear ratio curve
         G_high = df['GearRatio'].max()
         G_low = df['GearRatio'].min()
 
         R_T = G_high / G_low
         R_ideal = R_T**(1 / (len(df) - 1))
         ideal_ratios = [G_low * (R_ideal ** i) for i in range(len(df))]
-        plt.plot(range(len(df)), ideal_ratios,color="lightgrey",label='Ideal Gear Ratios (6.77% jumps)', marker='o',zorder=1)
+        plt.plot(range(len(df)), ideal_ratios, color="lightgrey", label='Ideal Gear Ratios (6.77% jumps)', marker='o', zorder=1)
 
-        plt.xticks(rotation=90)  # Rotate x-axis labels for readability
-        plt.xlabel('Gear Combination')
-        plt.ylabel('Gear Ratio')
-        plt.title(f"Shifting Pattern Gear Ratios by Gear Combination {name}")
+        # Labeling and styling
+        plt.xticks(rotation=90, fontsize=12)  # x-axis ticks
+        plt.yticks(fontsize=12)               # y-axis ticks
+        plt.xlabel('Gear Combination', fontsize=14)
+        plt.ylabel('Gear Ratio', fontsize=14)
+        plt.title(f"Shifting Pattern Gear Ratios by Gear Combination {name}", fontsize=16)
         plt.grid(True)
         plt.tight_layout()
-        
-        # Add legend for color meanings
+
+        # Legend
         legend_elements = [
             Line2D([0], [0], color='blue', lw=2, label='Rear shift'),
             Line2D([0], [0], color='yellow', lw=2, label='Front shift'),
             Line2D([0], [0], color='red', lw=2, label='Both shifted'),
             Line2D([0], [0], color='lightgrey', lw=2, label='Ideal shift')
         ]
-        plt.legend(handles=legend_elements, title="Shift Type")
+        plt.legend(handles=legend_elements, title="Shift Type", fontsize=12, title_fontsize=13)
 
         plt.savefig(f"{output_dir}/{name}_gear_ratio.png")
         plt.close()
@@ -604,7 +607,7 @@ def score(config: GearConfig,store: VarStore,pattern):
         worst_jump_diff = max(worst_jump_diff_small,worst_jump_diff_big)
 
         # Finds proportional difference from optimal cadence, applies it to efficiency func for worst efficiency shift
-        worst_effective_cadence = (worst_jump_diff / optimal_jump) * store.peak_cadence
+        worst_effective_cadence = ((worst_jump_diff / optimal_jump)+1) * store.peak_cadence
         worst_efficiency = efficiency(worst_effective_cadence,store)
         worst_efficiency_formatted = 1-worst_efficiency
 
@@ -613,6 +616,7 @@ def score(config: GearConfig,store: VarStore,pattern):
         rms_diff = np.sqrt(np.mean((df["up_differences_from_opt"])**2))
         rms_effective_cadence = rms_diff * store.peak_cadence
         rms_eff = efficiency(rms_effective_cadence,store)
+        rms_eff_formatted = 1-rms_eff
 
         # average_jump = df["Jump_avg"].mean()
         # avg_to_opt = abs(average_jump - optimal_jump)
@@ -625,23 +629,25 @@ def score(config: GearConfig,store: VarStore,pattern):
         front_changes = (df["FrontTeeth"] != df["FrontTeeth"].shift()).sum() -1
 
         # Calculates single combo_score from all measures
-        combo_score = worst_efficiency_formatted + rms_eff + front_changes
+        combo_score = worst_efficiency_formatted + rms_eff_formatted + front_changes
 
         all_scores.append({
             "Groupset": key,
             "Range": range,
             "Optimal Jump": optimal_jump,
-            "Worst Effective Cadence": worst_effective_cadence,
             "RMS diff": rms_diff,
+            "RMS cad": rms_effective_cadence,
             "RMS eff": rms_eff,
+            "RMS eff formatted": rms_eff_formatted,
             # "Average Effective Cadence": avg_effective_cadence,
-            # "Worst Diff to Optimal": worst_jump_diff,
+            "Worst Diff to Optimal": worst_jump_diff,
             # "Avg Diff to Optimal": avg_to_opt,
             # "Average jump": average_jump,
-            "Worst Efficiency": worst_efficiency,
             # "Biggest Jump": biggest_jump,
             # "Smallest Jump": smallest_jump,
             # "Average Efficiency": avg_efficiency,
+            "Worst Effective Cadence": worst_effective_cadence,
+            "Worst Efficiency": worst_efficiency,
             "Worst Efficiency Formatted": worst_efficiency_formatted,
             # "Average Efficiency Formatted": avg_efficiency_formatted,
             "Front Shifts": front_changes,
@@ -690,7 +696,7 @@ def best_finder(config: GearConfig, store: VarStore, pattern):
         top_rows.append(top)
 
     all_top_rows = pd.concat(top_rows)
-    top_of_top = all_top_rows.nlargest(top_size,"Combo Score")
+    top_of_top = all_top_rows.nsmallest(top_size,"Combo Score")
 
     top_of_top.to_csv('top_of_top.csv', index=False)
     top_of_top.to_parquet('top_of_top.parquet')
@@ -801,27 +807,30 @@ def main():
     config = GearConfig(max_front=2,
                         max_rear=12,
                         smallest_rear=11,
-                        largest_rear=23,
+                        largest_rear=36,
                         smallest_front=40,
                         largest_front=54,
                         use_real=False,
                         use_generated=True)
     # Creates instance of store and loads with quadratic params
     store = cadence_reference()
-
+    
     # Adds peak cadence to store instance
     store = best_cadence(store)
-
+    print(f"Time elapsed: {(time.time()-start)}")
+    
     # Checks if score has a cache and runs it if not (can force to run)
-    get_data(config,store,"halves_half_combos",force_recompute=True)
-
+    get_data(config,store,"quarters",force_recompute=False)
+    print(f"Time elapsed: {(time.time()-start)}")
+    
     # # Predicts time taken to run large datasets
     # time_predict()
 
     # Finds best gears based on measures
-    best_finder(config,store,pattern="halves_half_combos")
+    best_finder(config,store,pattern="quarters")
+    print(f"Time elapsed: {(time.time()-start)}")
 
-    # # Chooses which gearsets to graph ratio shifts on
+    # Chooses which gearsets to graph ratio shifts on
     what_to_plot("top_gearsets")
 
     # score(config,store,"halves")
