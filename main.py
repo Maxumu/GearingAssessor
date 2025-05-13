@@ -688,7 +688,7 @@ def best_finder(config: GearConfig, store: VarStore, pattern):
     # Defines how much of the score dataframe to hold in ram at once
     chunk_size = 500_000
     # Defines what proportion of the score dataframe I want to keep to plot
-    top_size = 1
+    top_size = 60
     # Goes through dataframe in chunks
     for start in range(0,len(all_scores_df),chunk_size):
         chunk = all_scores_df.iloc[start:start+chunk_size]
@@ -810,8 +810,8 @@ def main():
                         largest_rear=36,
                         smallest_front=40,
                         largest_front=54,
-                        use_real=False,
-                        use_generated=True)
+                        use_real=True,
+                        use_generated=False)
     # Creates instance of store and loads with quadratic params
     store = cadence_reference()
     
@@ -820,7 +820,7 @@ def main():
     print(f"Time elapsed: {(time.time()-start)}")
     
     # Checks if score has a cache and runs it if not (can force to run)
-    get_data(config,store,"quarters",force_recompute=False)
+    get_data(config,store,"quarters",force_recompute=True)
     print(f"Time elapsed: {(time.time()-start)}")
     
     # # Predicts time taken to run large datasets
@@ -831,7 +831,7 @@ def main():
     print(f"Time elapsed: {(time.time()-start)}")
 
     # Chooses which gearsets to graph ratio shifts on
-    what_to_plot("top_gearsets")
+    what_to_plot("all_analysed")
 
     # score(config,store,"halves")
 

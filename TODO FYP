@@ -2,7 +2,7 @@ Technical:
 	Fix VarStore COMPLETE
 	Set up large scale fast plotting TODO
 	Test thousands scale COMPLETE
-	Run overnight fullscale test TODO
+	Run overnight fullscale test COMPLETE
 
 TODO TOTAL (nothing gets removed, only added):
 
@@ -11,23 +11,23 @@ Writing:
 	- Scoring gearsets tech procedure COMPLETE
 	- Cadence and eff technical procedure COMPLETE
 	- Spreadsheet approach motivations COMPLETE
-	- Optimisation and GitHub TODO
+	- Optimisation and GitHub COMPLETE
 	- Overall results and discussion TODO
-		- Results to present TODO
-		- Results discussion TODO
+		- Results to present TODO <<<<<<<<<<<<<
+		- Results discussion TODO <<<<<<<<<<<<<<<
 		- Limitations COMPLETE
 		- Eff/Cad curve COMPLETE
-		- Cassette mechanical considerations TODO
-	- Conclusions and future work TODO
+		- Cassette mechanical considerations TODO <<<<<<<<<<<<<<<
+	- Conclusions and future work TODO <<<<<<<<<<<<<
 	- Project management TODO
-	- Extend lit review TODO
+	- Extend lit review TODO <<<<<<<<<<<<<<<
 	- Self review TODO
-	- Abstract TODO
+	- Abstract TODO <<<<<<<<<<<<<
 	- Introduction TODO
 	- Acknowledgements TODO
 	
 	
-	Move into overleaf TODO
+	Move into overleaf COMPLETE
 	- Intial spreadsheet approach COMPLETE
 	- Cadence and efficiency reference COMPLETE
 	- Gearset generation COMPLETE
@@ -36,14 +36,14 @@ Writing:
 	- Scoring Gearsets COMPLETE
 	- Parametric cad justification COMPLETE
 	- Parametric CAD description COMPLETE
-	- Overall discussion TODO
+	- Overall discussion COMPLETE
 
 	Aggregate discussion points into docs COMPLETE
 	
 	Read through interim sections and edit TODO
 	- Background and Motivations COMPLETE
 	- Aims and Objectives COMPLETE
-	- Literature review TODO
+	- Literature review TODO <<<<<<<<<<<<<<<<<<
 	- Initial spreadsheet approach COMPLETE
 	
 Make figures:
@@ -54,53 +54,25 @@ Make figures:
 	- Existing gearsets shifting pattern halves NICE TO HAVE
 	- Quadratic vs efficiency curve COMPLETE
 	____________ 11,12,13 change _______________
-	- Shifting patterns for top gearsets TODO
-	- Better optimisation waterfall chart
-	- Average efficiency vs worst efficiency for a few hundred gearsets TODO
+	- Shifting patterns for top gearsets COMPLETE
+	- Better optimisation waterfall chart <<<<<<<<<
+	- Average efficiency vs worst efficiency for a few hundred gearsets TODO <<<<<<<
 	
 	Other:
-	- Original optimisation waterfall chart TODO
-	- Case study all shifts diagram TODO
-	- Shifting pattern spreadsheet TODO
-	- Python flowchart TODO
+	- Original optimisation waterfall chart COMPLETE
+	- Quadratic vs efficiency curve COMPLETE
+	- Case study all shifts diagram COMPLETE
+	- Shifting pattern spreadsheet COMPLETE
+	- Python flowchart COMPLETE
 	- Parametric design COMPLETE
 	- Resultant sprockets COMPLETE
 
 Technical:
 	Add 11,12,13 to gearset generator COMPLETE
-	Run overnight full-scale calcs TODO
+	Run overnight full-scale calcs COMPLETE
 	Set up large scale fast plotting TODO
 	Generate whole cassette model NICE TO HAVE
-	
-TODO 10/05/25
-
-Writing:
-	Complete docs version for:
-	- Optimisation and GitHub TODO
-	- Overall results and discussion TODO
-		- Results to present TODO
-		- Results discussion TODO
-		- Limitations COMPLETE
-		- Eff/Cad curve COMPLETE
-		- Cassette mechanical considerations TODO
-	- Conclusions and future work TODO
-	
-	Read through interim sections and edit TODO
-	- Literature review TODO
-
-Formatting:
-	Format figures:
-	- Python flowchart TODO
-	- Quadratic vs efficiency curve TODO
-	- Shifting pattern spreadsheet TODO
-	- Shifting patterns for top gearsets TODO
-	- Case study all shifts diagram TODO
-	- Optimisation waterfall chart TODO
-	
-Technical:
-	Add 11,12,13 to gearset generator TODO
-
-
+__________________________________________________________________________
 EOD FINDINGS:
 
 Ceramicspeed 2015 analysis quantifies losses due to cross chaining.
