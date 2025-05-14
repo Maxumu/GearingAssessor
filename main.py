@@ -637,7 +637,7 @@ def score(config: GearConfig,store: VarStore,pattern):
             "Optimal Jump": optimal_jump,
             "RMS diff": rms_diff,
             "RMS cad": rms_effective_cadence,
-            "RMS eff": rms_eff,
+            "RMS Efficiency": rms_eff,
             "RMS eff formatted": rms_eff_formatted,
             # "Average Effective Cadence": avg_effective_cadence,
             "Worst Diff to Optimal": worst_jump_diff,
@@ -711,7 +711,7 @@ def results_plotter_matplotlib(all_scores_df):
     for key, group in all_scores_df.groupby("Groupset"):
         # Extract the values for plotting
         x_value = group["Worst Efficiency"]
-        y_value = group["Range"]
+        y_value = group["RMS Efficiency"]
         plt.scatter(x_value, y_value, label=key)
         # plt.text(x_value, y_value, key, fontsize=6, ha='right')
         if x_value.iloc[0] < leader:
@@ -719,12 +719,12 @@ def results_plotter_matplotlib(all_scores_df):
             leader_key = key
 
     plt.xlabel("Worst Efficiency")
-    plt.ylabel("Range")
+    plt.ylabel("RMS Efficiency")
     plt.title("Score DataFrames Scatter Plot")
     plt.grid(True)
     # plt.legend()
     # plt.show()
-    plt.savefig("plot2.png")
+    plt.savefig("Worst_RMS_Efficiency.png")
     print("results_plotter done")
     return
 
@@ -820,14 +820,14 @@ def main():
     print(f"Time elapsed: {(time.time()-start)}")
     
     # Checks if score has a cache and runs it if not (can force to run)
-    get_data(config,store,"quarters",force_recompute=True)
+    get_data(config,store,"ideal",force_recompute=True)
     print(f"Time elapsed: {(time.time()-start)}")
     
     # # Predicts time taken to run large datasets
     # time_predict()
 
     # Finds best gears based on measures
-    best_finder(config,store,pattern="quarters")
+    best_finder(config,store,pattern="ideal")
     print(f"Time elapsed: {(time.time()-start)}")
 
     # Chooses which gearsets to graph ratio shifts on
@@ -835,8 +835,8 @@ def main():
 
     # score(config,store,"halves")
 
-    # # Plots data using matplotlib
-    # results_plotter_matplotlib(get_data(config,store,"quarters"))
+    # Plots data using matplotlib
+    results_plotter_matplotlib(get_data(config,store,"ideal"))
 
     # Stops run timer and finds duration
     end = time.time()
