@@ -4,6 +4,7 @@ from scipy.optimize import curve_fit
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from adjustText import adjust_text
 from itertools import combinations
 import csv
 import time
@@ -705,28 +706,54 @@ def best_finder(config: GearConfig, store: VarStore, pattern):
     return(top_of_top)
 
 def results_plotter_matplotlib(all_scores_df):
+    fig, ax = plt.subplots(figsize=(8, 8))
+    texts = []
 
-    plt.figure(figsize=(10, 10))
-    leader = 10
     for key, group in all_scores_df.groupby("Groupset"):
-        # Extract the values for plotting
+        label = key[:-8]
         x_value = group["Worst Efficiency"]
         y_value = group["RMS Efficiency"]
-        plt.scatter(x_value, y_value, label=key)
-        # plt.text(x_value, y_value, key, fontsize=6, ha='right')
-        if x_value.iloc[0] < leader:
-            leader = x_value.iloc[0]
-            leader_key = key
+        ax.scatter(x_value, y_value, label=label, zorder=3)
 
-    plt.xlabel("Worst Efficiency")
-    plt.ylabel("RMS Efficiency")
-    plt.title("Score DataFrames Scatter Plot")
-    plt.grid(True)
-    # plt.legend()
-    # plt.show()
-    plt.savefig("Worst_RMS_Efficiency.png")
+        for x, y in zip(x_value, y_value):
+            text = ax.annotate(
+                label,
+                xy=(x, y),
+                xytext=(x, y),
+                textcoords='data',
+                fontsize=12,
+                zorder=2,
+                bbox=dict(facecolor='white', alpha=1, edgecolor='none'))
+            texts.append(text)
+
+
+    fig.canvas.draw()
+
+    adjust_text(
+        texts,
+        ax=ax,
+        # arrowprops=dict(arrowstyle='->', color='grey', lw=1, shrinkA=2, shrinkB=1),
+        force_points=2,
+        force_text=1,
+        expand_points=(1, 1),
+        expand_text=(1, 1),
+        only_move={'points':'xy', 'text': 'xy'},
+        precision=0.01,
+        zorder=1
+    )
+
+    ax.set_xlabel("Worst Efficiency", fontsize=14)
+    ax.set_ylabel("RMS Efficiency", fontsize=14)
+    ax.set_title("Score DataFrames Scatter Plot", fontsize=14)
+    ax.grid(False)
+    fig.tight_layout()
+    fig.savefig("Worst_RMS_Efficiency.png")
     print("results_plotter done")
+
+
     return
+
+
 
 def time_predict():
     """
